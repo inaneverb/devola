@@ -30,19 +30,20 @@ import (
 )
 
 // tEventIKBIDEncoded is the internal type that technically is just
-// an encoded part of Telegram Bot Inline Keyboard Button identifier.
-//
-// It's done for saving readability of tEvent.Data but also optimise an usage
-// of allowed len of Telegram Inline Keyboard Button Callback Data.
+// an encoded part of Telegram Bot Inline Keyboard Button callback data.
 //
 // At this moment (April, 2019) Telegram API (v4.1) allow represent
 // action of Inline Keyboard Buttons as some string that must have length
 // not more than 64 byte.
 //
-// As a result, each string-represented Inline Keyboard Button action,
-// registered by this SDK, replaces by some tEventIKBIDEncoded value
-// (it is a integer type) and then these bytes will be used as part of
-// inline keyboard button identifier: The Callback Data.
+// This type represents the encoded button identifier and takes only
+// 4 bytes (of 64 allowed). Other 60 bytes used for representing Session ID
+// and encoded arguments.
+//
+// It's done for saving readability of tEvent.Data but also optimise an usage
+// of allowed len of Telegram Inline Keyboard Button Callback Data.
+//
+// More info: tEventIKBActionEncoded.
 type tEventIKBIDEncoded uint32
 
 // Internal constants of encoded Inline Keyboard Button identifier.
@@ -78,6 +79,7 @@ type tEventIKBIDConverter struct {
 
 // isValidAction returns true only for strings (inline keyboard actions)
 // that contains more than 2 characters and not starts from doubleunderscore.
+//
 // Doubleunderscore starting is reserved for internal needs.
 func (*tEventIKBIDConverter) isValidAction(action string) bool {
 	return len(action) > 2 && action[:2] != "__"
@@ -86,9 +88,7 @@ func (*tEventIKBIDConverter) isValidAction(action string) bool {
 // isValidEncodedData returns true only for encoded inline keyboard actions
 // that are not equal to the cEventIKBDataEncodedNull, and is in the
 // allowed range.
-func (*tEventIKBIDConverter) isValidEncodedData(
-	encodedData tEventIKBIDEncoded,
-) bool {
+func (*tEventIKBIDConverter) isValidEncodedData(encodedData tEventIKBIDEncoded) bool {
 	return encodedData != cEventIKBDataEncodedNull &&
 		encodedData >= cEventIKBDataEncodedStartValue &&
 		encodedData < cEventIKBDataEncodedOverMaxValue
@@ -96,14 +96,10 @@ func (*tEventIKBIDConverter) isValidEncodedData(
 
 // Encode tries to represent and return an inline keyboard button identifier
 // as some tEventIKBIDEncoded value.
+//
 // So, it will be successfully only if action is already registered
 // by Register method.
-func (eikbdc *tEventIKBIDConverter) Encode(
-	action string,
-) (
-	tEventIKBIDEncoded,
-	error,
-) {
+func (eikbdc *tEventIKBIDConverter) Encode(action string) (tEventIKBIDEncoded, error) {
 	if !eikbdc.isValidAction(action) {
 		err := "EventIKBDataConverter: Trying to encode an invalid action."
 		return cEventIKBDataEncodedNull, errors.New(err)
@@ -122,14 +118,10 @@ func (eikbdc *tEventIKBIDConverter) Encode(
 
 // Decode tries to represent encoded an inline keyboard button identifier
 // as readable string.
+//
 // So, it will be successfully only if some action is already registered
 // by Register method and Register method links encodedData with action.
-func (eikbdc *tEventIKBIDConverter) Decode(
-	encodedData tEventIKBIDEncoded,
-) (
-	string,
-	error,
-) {
+func (eikbdc *tEventIKBIDConverter) Decode(encodedData tEventIKBIDEncoded) (string, error) {
 	if !eikbdc.isValidEncodedData(encodedData) {
 		err := "EventIKBDataConverter: Trying to decode an invalid encoded data."
 		return "", errors.New(err)
@@ -151,15 +143,11 @@ func (eikbdc *tEventIKBIDConverter) Decode(
 // Register tries to register action as new Inline Keyboard Button readable
 // identifier, provide a some tEventIKBIDEncoded identifier for this,
 // link and associate it.
+//
 // So, it will be successfully only if the same action is not already registered
 // and if limit of registered action is not reached.
 // In this case encoded identifer and nil as error are returned.
-func (eikbdc *tEventIKBIDConverter) Register(
-	action string,
-) (
-	tEventIKBIDEncoded,
-	error,
-) {
+func (eikbdc *tEventIKBIDConverter) Register(action string) (tEventIKBIDEncoded, error) {
 	if !eikbdc.isValidAction(action) {
 		err := "EventIKBDataConverter: Trying to register an invalid action."
 		return cEventIKBDataEncodedNull, errors.New(err)
@@ -181,6 +169,7 @@ func (eikbdc *tEventIKBIDConverter) Register(
 }
 
 // makeEventIKBDataConverter is the tEventIKBIDConverter constructor.
+//
 // Allocates memory for internal parts and initializes the default state of
 // tEventIKBIDEncoded generator.
 func makeEventIKBDataConverter() *tEventIKBIDConverter {
