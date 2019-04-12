@@ -1,4 +1,4 @@
-// Copyright © 2018. All rights reserved.
+// Copyright Â© 2018. All rights reserved.
 // Author: Alice Qio.
 // Contacts: <qioalice@gmail.com>.
 // License: https://opensource.org/licenses/MIT
@@ -23,8 +23,26 @@
 
 package tgbot
 
-// tEventHandler is the function, callback, that registered by you
-// as handler to the event and it will be called when that event is occurred.
+// FViewMiddleware is the function, callback, that registered by you as
+// a function for some event and it will be called when that event is occurred,
+// but BEFORE event handler (tHandlerCallback) calling!
+//
+// Moreover, your function, a middleware, should return true or false.
+// It's an indicator.
+// If event handler callback(s) must be called and event
+// should be proceed, you must return true from ALL registered middleewares.
+// If at least one middleware returns false, the rest of event middlewares
+// and event handlers will never called for occurred event and event
+// will be discarded.
+//
+// It guarantees, that when the middlewares is called, the TCtx object
+// is considered completely created and TCtx object will be passed to the
+// handler callback in the form in which it is after middleware call
+// will finish.
+// So, it means all changes in TCtx object made inside middleware will be saved
+// and handler callback will receive modified by you TCtx object.
+// But there is no internal modifies of TCtx object between middleware
+// and handler calls.
 //
 // More info: tReceiver, TCtx, tBehaviourCreator, TBot.
-type tEventHandler func(c *Ctx)
+type FViewMiddleware func(c *Ctx) bool
