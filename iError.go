@@ -30,6 +30,9 @@ type iError interface {
 	// with the same type and with the same value as receiver type
 	// which implements iError interface and which calls this method.
 	IsIt(e error) bool
+
+	// Inherit from standard golang error type.
+	Error() string
 }
 
 // IsErr returns an one of candidates error
