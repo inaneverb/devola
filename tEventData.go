@@ -25,7 +25,7 @@ package tgbot
 
 // tEventData represents data (body) of event that is occurred:
 // - for Keyboard Button it is the button text
-// - fot Inline Keyboard Button it is the encoded IKB action (tIKBActionEncoded).
+// - fot Inline Keyboard Button it is the View ID (not encoded)
 // - for Text it is the text
 // - for Command it is the body of command (w/o '/')
 // etc.
@@ -35,5 +35,5 @@ package tgbot
 // Thus you can always to get this inside handler of event your handler
 // handling.
 //
-// More info: tIKBActionEncoded, tEvent, TCtx.
+// More info: tIKBActionEncoded, tViewID, tViewIDConverter, tEvent, TCtx.
 type tEventData string

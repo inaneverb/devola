@@ -52,7 +52,7 @@ type tEvent struct {
 	Type tEventType `json:"type"`
 
 	// The occurred event's data. Text, keyboard button text, inline keyboard
-	// encoded action, etc.
+	// View ID, etc.
 	Data tEventData `json:"data"`
 
 	// Encoded IKB action.
