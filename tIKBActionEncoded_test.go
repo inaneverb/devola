@@ -37,11 +37,11 @@ import (
 // encode/decode algorithm in tIKBActionEncoded type.
 func TestTEventIKBActionEncoded_ValidTEventIKBIDEncoded(t *testing.T) {
 
-	ikbid := tViewIDEncoded(cEventIKBDataEncodedNull)
-	mustSize := cEventIKBActionEncoderPosSessionID - cEventIKBActionEncoderPosViewID
+	ikbid := tViewIDEncoded(cViewIDEncodedNull)
+	mustSize := cIKBActionEncodedPosSessionID - cIKBActionEncodedPosViewID
 
 	testMsg := "Sizeof tViewIDEncoded is incompatible with predefined " +
-		"cEventIKBActionEncoderPosViewID and cEventIKBActionEncoderPosSessionID " +
+		"cIKBActionEncodedPosViewID and cIKBActionEncodedPosSessionID " +
 		"position constants."
 
 	testify.True(t, unsafe.Sizeof(ikbid) == uintptr(mustSize), testMsg)
@@ -53,10 +53,10 @@ func TestTEventIKBActionEncoded_ValidTEventIKBIDEncoded(t *testing.T) {
 func TestTEventIKBActionEncoded_ValidTSessionID(t *testing.T) {
 
 	ssid := tSessionID(cSessionIDNil)
-	mustSize := CEventIKBActionEncoderePosArgs - cEventIKBActionEncoderPosSessionID
+	mustSize := cIKBActionEncodedPosArgs - cIKBActionEncodedPosSessionID
 
 	testMsg := "Sizeof tSessionID is incompatible with predefined " +
-		"cEventIKBActionEncoderPosSessionID and CEventIKBActionEncoderePosArgs " +
+		"cIKBActionEncodedPosSessionID and cIKBActionEncodedPosArgs " +
 		"position constants."
 
 	testify.True(t, unsafe.Sizeof(ssid) == uintptr(mustSize), testMsg)
