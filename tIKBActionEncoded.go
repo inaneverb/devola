@@ -30,7 +30,7 @@ import (
 // todo: Add negative index GetArg support.
 // todo: Add named arguments.
 
-// tEventIKBActionEncoded is the internal type that represents encoded
+// tIKBActionEncoded is the internal type that represents encoded
 // a Telegram Inline Keyboard Button (IKB) action.
 //
 // Action must have an ID of action, a SSID this button links with and
@@ -42,40 +42,60 @@ import (
 //
 // The encode/decode algorithm described below.
 //
-// Encoded view of tEventIKBActionEncoded:
+// Encoded view of tIKBActionEncoded:
 //
-// < Action ID : sizeof(tEventIKBActionEncoded) (now 4 byte) >
-// < Session ID : sizeof(TSessionID) (now 4 byte) >
+// < Action ID : sizeof(tIKBActionEncoded) (now 4 byte) >
+// < Session ID : sizeof(tSessionID) (now 4 byte) >
 // < Args count : 1 byte >
 // < Index over last encoded argument : 1 byte >
 // < Arg 1 Type : 1 byte >
 // < Arg 1 Value : N bytes (depends by Arg 1 Type) > ...
 //
 // ATTENTION!
-// DO NOT FORGET CALL init METHOD OF EACH NEW tEventIKBActionEncoded INSTANCE!
-type tEventIKBActionEncoded [64]byte
+// DO NOT FORGET CALL init METHOD OF EACH NEW tIKBActionEncoded INSTANCE!
+type tIKBActionEncoded [64]byte
 
-// Predefined position constants that helps to perform encode/decode operations
-// in tEventIKBActionEncoded.
+// Predefined position constants that helps to perform encode/decode operations.
 const (
-	cEventIKBActionEncoderPosID          byte = 0
-	cEventIKBActionEncoderPosSSID        byte = 4
-	CEventIKBActionEncoderePosArgs       byte = 8
-	cEventIKBActionEncoderPosArgsCount        = CEventIKBActionEncoderePosArgs + 0
-	cEventIKBActionEncoderPosArgsFreePos      = CEventIKBActionEncoderePosArgs + 1
-	cEventIKBActionEncoderPosArgsContent      = CEventIKBActionEncoderePosArgs + 2
-	cEventIKBActionEncoderPosMax         byte = 63
-	cEventIKBActionEncoderPosERROR       byte = ^0
+
+	// Position in tIKBActionEncoded where View ID starts from.
+	cEventIKBActionEncoderPosViewID byte = 0
+
+	// Position in tIKBActionEncoded where Session ID starts from.
+	cEventIKBActionEncoderPosSessionID byte = 4
+
+	// Position in tIKBActionEncoded where encoded arguments' part starts from.
+	CEventIKBActionEncoderePosArgs byte = 8
+
+	// Position in tIKBActionEncoded where encoded arguments' counter is.
+	cEventIKBActionEncoderPosArgsCount = CEventIKBActionEncoderePosArgs + 0
+
+	// Position in tIKBActionEncoded where saved the position
+	// starts from a next encoded argument can be placed.
+	cEventIKBActionEncoderPosArgsFreePos = CEventIKBActionEncoderePosArgs + 1
+
+	// Position in tIKBActionEncoded where encoded arguments' data starts from.
+	cEventIKBActionEncoderPosArgsContent = CEventIKBActionEncoderePosArgs + 2
+
+	// Max allowable position in tIKBActionEncoded.
+	cEventIKBActionEncoderPosMax byte = 63
+
+	// Error position value.
+	// Returned from some methods.
+	cEventIKBActionEncoderPosERROR byte = ^0
 )
 
-// Predefined index constants that means a special cases of encode/decode
-// operations in tEventIKBActionEncoded.
+// Predefined index constants that means a special cases of encode/decode operations.
 const (
+
+	// Bad argument's index.
+	// Each encoded argument in tIKBActionEncoded has its own index.
+	// Some methods should return that index.
+	// If any error occurred, this value indicates it.
 	cEventIKBActionEncoderBadIndex int = -1
 )
 
-// Predefined argument's type constants that helps represents (encode/decode)
-// arguments in tEventIKBActionEncoded.
+// Predefined argument's type constants that helps represents (encode/decode) arguments.
 //
 // ATTENTION!
 // DO NOT FORGET ADD ALL NEW CONSTANTS TO THE argNextFromPos METHOD'S SWITCH!
@@ -85,31 +105,52 @@ const (
 // ATTENTION!
 // DO NOT OVERFLOW INT8 (1<<7) -1 (127). BECAUSE!
 const (
-	cEventIKBActionEncoderArgTypeInt8  byte = 10
+
+	// Header of int8 argument
+	cEventIKBActionEncoderArgTypeInt8 byte = 10
+
+	// Header of int16 argument
 	cEventIKBActionEncoderArgTypeInt16 byte = 11
+
+	// Header of int32 argument
 	cEventIKBActionEncoderArgTypeInt32 byte = 12
+
+	// Header of int64 argument
 	cEventIKBActionEncoderArgTypeInt64 byte = 13
 
-	cEventIKBActionEncoderArgTypeUint8  byte = 14
+	// Header of uint8 argument
+	cEventIKBActionEncoderArgTypeUint8 byte = 14
+
+	// Header of uint16 argument
 	cEventIKBActionEncoderArgTypeUint16 byte = 15
+
+	// Header of uint32 argument
 	cEventIKBActionEncoderArgTypeUint32 byte = 16
+
+	// Header of uint64 argument
 	cEventIKBActionEncoderArgTypeUint64 byte = 17
 
+	// Header of float32 argument
 	cEventIKBActionEncoderArgTypeFloat32 byte = 18
+
+	// Header of float64 argument
 	cEventIKBActionEncoderArgTypeFloat64 byte = 19
 
+	// Header of string argument
 	cEventIKBActionEncoderArgTypeString byte = 20
 )
 
 // ext1byte extracts 1 byte from encoded IKB action d starts from startPos
 // and returns it.
-func (d *tEventIKBActionEncoded) ext1byte(startPos byte) (v int8) {
+func (d *tIKBActionEncoded) ext1byte(startPos byte) (v int8) {
+
 	return int8(d[startPos])
 }
 
 // ext2bytes extracts 2 bytes from encoded IKB action d starts from startPos
 // and returns it.
-func (d *tEventIKBActionEncoded) ext2bytes(startPos byte) (v int16) {
+func (d *tIKBActionEncoded) ext2bytes(startPos byte) (v int16) {
+
 	v |= int16(d[startPos+0] << 0)
 	v |= int16(d[startPos+1] << 8)
 	return v
@@ -117,7 +158,8 @@ func (d *tEventIKBActionEncoded) ext2bytes(startPos byte) (v int16) {
 
 // ext4bytes extracts 4 bytes from encoded IKB action d starts from startPos
 // and returns it.
-func (d *tEventIKBActionEncoded) ext4bytes(startPos byte) (v int32) {
+func (d *tIKBActionEncoded) ext4bytes(startPos byte) (v int32) {
+
 	v |= int32(d[startPos+0] << 0)
 	v |= int32(d[startPos+1] << 8)
 	v |= int32(d[startPos+2] << 16)
@@ -127,7 +169,8 @@ func (d *tEventIKBActionEncoded) ext4bytes(startPos byte) (v int32) {
 
 // ext8bytes extracts 8 bytes from encoded IKB action d starts from startPos
 // and returns it.
-func (d *tEventIKBActionEncoded) ext8bytes(startPos byte) (v int64) {
+func (d *tIKBActionEncoded) ext8bytes(startPos byte) (v int64) {
+
 	v |= int64(d[startPos+0] << 0)
 	v |= int64(d[startPos+1] << 8)
 	v |= int64(d[startPos+2] << 16)
@@ -141,7 +184,8 @@ func (d *tEventIKBActionEncoded) ext8bytes(startPos byte) (v int64) {
 
 // extNbytes extracts N bytes from encoded IKB action d starts from startPos
 // and returns it.
-func (d *tEventIKBActionEncoded) extNbytes(startPos, bytes byte) (v []byte) {
+func (d *tIKBActionEncoded) extNbytes(startPos, bytes byte) (v []byte) {
+
 	v = make([]byte, bytes)
 	for i := byte(0); i < bytes; i++ {
 		v[i] = d[startPos+i]
@@ -150,18 +194,21 @@ func (d *tEventIKBActionEncoded) extNbytes(startPos, bytes byte) (v []byte) {
 }
 
 // put1byte puts 1 byte v to the encoded IKB action d starts from startPos.
-func (d *tEventIKBActionEncoded) put1byte(startPos byte, v int8) {
+func (d *tIKBActionEncoded) put1byte(startPos byte, v int8) {
+
 	d[startPos] = byte(v)
 }
 
 // put2bytes puts 2 bytes v to the encoded IKB action d starts from startPos.
-func (d *tEventIKBActionEncoded) put2bytes(startPos byte, v int16) {
+func (d *tIKBActionEncoded) put2bytes(startPos byte, v int16) {
+
 	d[startPos+0] = byte(v >> 0)
 	d[startPos+1] = byte(v >> 8)
 }
 
 // put4bytes puts 4 bytes v to the encoded IKB action d starts from startPos.
-func (d *tEventIKBActionEncoded) put4bytes(startPos byte, v int32) {
+func (d *tIKBActionEncoded) put4bytes(startPos byte, v int32) {
+
 	d[startPos+0] = byte(v >> 0)
 	d[startPos+1] = byte(v >> 8)
 	d[startPos+2] = byte(v >> 16)
@@ -169,7 +216,8 @@ func (d *tEventIKBActionEncoded) put4bytes(startPos byte, v int32) {
 }
 
 // put8bytes puts 8 bytes v to the encoded IKB action d starts from startPos.
-func (d *tEventIKBActionEncoded) put8bytes(startPos byte, v int64) {
+func (d *tIKBActionEncoded) put8bytes(startPos byte, v int64) {
+
 	d[startPos+0] = byte(v >> 0)
 	d[startPos+1] = byte(v >> 8)
 	d[startPos+2] = byte(v >> 16)
@@ -181,34 +229,39 @@ func (d *tEventIKBActionEncoded) put8bytes(startPos byte, v int64) {
 }
 
 // putNbytes puts N bytes v to the encoded IKB action d starts from startPos.
-func (d *tEventIKBActionEncoded) putNbytes(startPos byte, v []byte) {
+func (d *tIKBActionEncoded) putNbytes(startPos byte, v []byte) {
+
 	for i, n := byte(0), byte(len(v)); i < n; i++ {
 		d[startPos+i] = v[i]
 	}
 }
 
-// PutID puts the encoded IKB action ID to the current IKB action d.
-func (d *tEventIKBActionEncoded) PutID(id tEventIKBIDEncoded) {
-	d.put4bytes(cEventIKBActionEncoderPosID, int32(id))
+// PutViewID puts the encoded IKB action ID to the current IKB action d.
+func (d *tIKBActionEncoded) PutViewID(id tViewIDEncoded) {
+
+	d.put4bytes(cEventIKBActionEncoderPosViewID, int32(id))
 }
 
-// GetID extracts the encoded IKB action ID from the current IKB action d
+// GetViewID extracts the encoded IKB action ID from the current IKB action d
 // and returns it.
-func (d *tEventIKBActionEncoded) GetID() (id tEventIKBIDEncoded) {
-	id = tEventIKBIDEncoded(d.ext4bytes(cEventIKBActionEncoderPosID))
+func (d *tIKBActionEncoded) GetViewID() (id tViewIDEncoded) {
+
+	id = tViewIDEncoded(d.ext4bytes(cEventIKBActionEncoderPosViewID))
 	return
 }
 
-// PutSSID puts the session ID IKB linked with to the current IKB action d.
-func (d *tEventIKBActionEncoded) PutSSID(ssid TSessionID) {
-	d.put4bytes(cEventIKBActionEncoderPosSSID, int32(ssid))
+// PutSessionID puts the session ID IKB linked with to the current IKB action d.
+func (d *tIKBActionEncoded) PutSessionID(ssid tSessionID) {
+
+	d.put4bytes(cEventIKBActionEncoderPosSessionID, int32(ssid))
 	return
 }
 
-// GetSSID extract the encoded IKB session ID from the current IKB action d
+// GetSessionID extract the encoded IKB session ID from the current IKB action d
 // and returns it.
-func (d *tEventIKBActionEncoded) GetSSID() (ssid TSessionID) {
-	ssid = TSessionID(d.ext4bytes(cEventIKBActionEncoderPosSSID))
+func (d *tIKBActionEncoded) GetSessionID() (ssid tSessionID) {
+
+	ssid = tSessionID(d.ext4bytes(cEventIKBActionEncoderPosSessionID))
 	return
 }
 
@@ -217,7 +270,8 @@ func (d *tEventIKBActionEncoded) GetSSID() (ssid TSessionID) {
 //
 // WARNING! Only for any integer or float type.
 // Calls with other type's constant will return a very big value.
-func (*tEventIKBActionEncoded) argNeedForType(argType byte) (numBytes byte) {
+func (*tIKBActionEncoded) argNeedForType(argType byte) (numBytes byte) {
+
 	switch argType {
 
 	case cEventIKBActionEncoderArgTypeInt8,
@@ -245,7 +299,8 @@ func (*tEventIKBActionEncoded) argNeedForType(argType byte) (numBytes byte) {
 
 // argHaveFreeBytes returns true only if numBytes bytes of some argument
 // can be saved into current encoded action. Otherwise false is returned.
-func (d *tEventIKBActionEncoded) argHaveFreeBytes(numBytes byte) bool {
+func (d *tIKBActionEncoded) argHaveFreeBytes(numBytes byte) bool {
+
 	return d[cEventIKBActionEncoderPosArgsFreePos]+numBytes <=
 		cEventIKBActionEncoderPosMax
 }
@@ -259,7 +314,7 @@ func (d *tEventIKBActionEncoded) argHaveFreeBytes(numBytes byte) bool {
 //
 // WARNING! Only for any integer or float type.
 // Otherwise cEventIKBActionEncoderPosERROR is returned!
-func (d *tEventIKBActionEncoded) argReserveForType(argType byte) (startPos byte) {
+func (d *tIKBActionEncoded) argReserveForType(argType byte) (startPos byte) {
 
 	// Check whether d has as many free bytes as argType is required.
 	requiredBytes := d.argNeedForType(argType)
@@ -300,7 +355,7 @@ func (d *tEventIKBActionEncoded) argReserveForType(argType byte) (startPos byte)
 // argGet(4, int8) == pos of content of 4 arg.
 //
 // All types presented above are constants, of course.
-func (d *tEventIKBActionEncoded) argGet(argIdx int, argType byte) (startPos byte) {
+func (d *tIKBActionEncoded) argGet(argIdx int, argType byte) (startPos byte) {
 
 	// Check index is valid
 	if d.ArgCount() <= argIdx {
@@ -332,7 +387,8 @@ func (d *tEventIKBActionEncoded) argGet(argIdx int, argType byte) (startPos byte
 // position of some argument.
 //
 // WARNING! Do not have any check!
-func (d *tEventIKBActionEncoded) argNextFromPos(pos byte) (nextArgPos byte) {
+func (d *tIKBActionEncoded) argNextFromPos(pos byte) (nextArgPos byte) {
+
 	switch d[pos] {
 
 	case cEventIKBActionEncoderArgTypeInt8,
@@ -369,37 +425,51 @@ func (d *tEventIKBActionEncoded) argNextFromPos(pos byte) (nextArgPos byte) {
 }
 
 // argType2S returns a string name of type argType.
-func (d *tEventIKBActionEncoded) argType2S(argType byte) string {
+func (d *tIKBActionEncoded) argType2S(argType byte) string {
+
 	switch argType {
+
 	case cEventIKBActionEncoderArgTypeInt8:
 		return "int8"
+
 	case cEventIKBActionEncoderArgTypeInt16:
 		return "int16"
+
 	case cEventIKBActionEncoderArgTypeInt32:
 		return "int32"
+
 	case cEventIKBActionEncoderArgTypeInt64:
 		return "int64"
+
 	case cEventIKBActionEncoderArgTypeUint8:
 		return "uint8"
+
 	case cEventIKBActionEncoderArgTypeUint16:
 		return "uint16"
+
 	case cEventIKBActionEncoderArgTypeUint32:
 		return "uint32"
+
 	case cEventIKBActionEncoderArgTypeUint64:
 		return "uint64"
+
 	case cEventIKBActionEncoderArgTypeFloat32:
 		return "float32"
+
 	case cEventIKBActionEncoderArgTypeFloat64:
 		return "float64"
+
 	case cEventIKBActionEncoderArgTypeString:
 		return "string"
+
 	default:
 		return "UNKNOWN"
 	}
 }
 
 // ArgCount returns the number of stored arguments in encoded IKB action d.
-func (d *tEventIKBActionEncoded) ArgCount() (num int) {
+func (d *tIKBActionEncoded) ArgCount() (num int) {
+
 	return int(d[cEventIKBActionEncoderPosArgsCount])
 }
 
@@ -407,7 +477,8 @@ func (d *tEventIKBActionEncoded) ArgCount() (num int) {
 // IKB action d and returns the value before increasing.
 //
 // (postfix increase operator that Golang don't have).
-func (d *tEventIKBActionEncoded) argCountIncPostfix() (oldValue int) {
+func (d *tIKBActionEncoded) argCountIncPostfix() (oldValue int) {
+
 	oldValue = int(d[cEventIKBActionEncoderPosArgsCount])
 	d[cEventIKBActionEncoderPosArgsCount]++
 	return oldValue
@@ -416,7 +487,8 @@ func (d *tEventIKBActionEncoded) argCountIncPostfix() (oldValue int) {
 // PutArgInt puts int argument v to the encoded IKB action d.
 // If it was successfully, returns the index of that argument.
 // Otherwise -1 is returned (argument has not been added).
-func (d *tEventIKBActionEncoded) PutArgInt(v int) (argIdx int) {
+func (d *tIKBActionEncoded) PutArgInt(v int) (argIdx int) {
+
 	return d.PutArgInt32(int32(v))
 }
 
@@ -424,11 +496,13 @@ func (d *tEventIKBActionEncoded) PutArgInt(v int) (argIdx int) {
 //
 // If it was successfully, returns the index of that argument.
 // Otherwise -1 is returned (argument has not been added).
-func (d *tEventIKBActionEncoded) PutArgInt8(v int8) (argIdx int) {
+func (d *tIKBActionEncoded) PutArgInt8(v int8) (argIdx int) {
+
 	startPos := d.argReserveForType(cEventIKBActionEncoderArgTypeInt8)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return cEventIKBActionEncoderBadIndex
 	}
+
 	d.put1byte(startPos, v)
 	return d.argCountIncPostfix()
 }
@@ -437,11 +511,13 @@ func (d *tEventIKBActionEncoded) PutArgInt8(v int8) (argIdx int) {
 //
 // If it was successfully, returns the index of that argument.
 // Otherwise -1 is returned (argument has not been added).
-func (d *tEventIKBActionEncoded) PutArgInt16(v int16) (argIdx int) {
+func (d *tIKBActionEncoded) PutArgInt16(v int16) (argIdx int) {
+
 	startPos := d.argReserveForType(cEventIKBActionEncoderArgTypeInt16)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return cEventIKBActionEncoderBadIndex
 	}
+
 	d.put2bytes(startPos, v)
 	return d.argCountIncPostfix()
 }
@@ -450,11 +526,13 @@ func (d *tEventIKBActionEncoded) PutArgInt16(v int16) (argIdx int) {
 //
 // If it was successfully, returns the index of that argument.
 // Otherwise -1 is returned (argument has not been added).
-func (d *tEventIKBActionEncoded) PutArgInt32(v int32) (argIdx int) {
+func (d *tIKBActionEncoded) PutArgInt32(v int32) (argIdx int) {
+
 	startPos := d.argReserveForType(cEventIKBActionEncoderArgTypeInt32)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return cEventIKBActionEncoderBadIndex
 	}
+
 	d.put4bytes(startPos, v)
 	return d.argCountIncPostfix()
 }
@@ -463,11 +541,13 @@ func (d *tEventIKBActionEncoded) PutArgInt32(v int32) (argIdx int) {
 //
 // If it was successfully, returns the index of that argument.
 // Otherwise -1 is returned (argument has not been added).
-func (d *tEventIKBActionEncoded) PutArgInt64(v int64) (argIdx int) {
+func (d *tIKBActionEncoded) PutArgInt64(v int64) (argIdx int) {
+
 	startPos := d.argReserveForType(cEventIKBActionEncoderArgTypeInt64)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return cEventIKBActionEncoderBadIndex
 	}
+
 	d.put8bytes(startPos, v)
 	return d.argCountIncPostfix()
 }
@@ -476,7 +556,8 @@ func (d *tEventIKBActionEncoded) PutArgInt64(v int64) (argIdx int) {
 //
 // If it was successfully, returns the index of that argument.
 // Otherwise -1 is returned (argument has not been added).
-func (d *tEventIKBActionEncoded) PutArgUint(v uint) (argIdx int) {
+func (d *tIKBActionEncoded) PutArgUint(v uint) (argIdx int) {
+
 	return d.PutArgUint32(uint32(v))
 }
 
@@ -484,11 +565,13 @@ func (d *tEventIKBActionEncoded) PutArgUint(v uint) (argIdx int) {
 //
 // If it was successfully, returns the index of that argument.
 // Otherwise -1 is returned (argument has not been added).
-func (d *tEventIKBActionEncoded) PutArgUint8(v uint8) (argIdx int) {
+func (d *tIKBActionEncoded) PutArgUint8(v uint8) (argIdx int) {
+
 	startPos := d.argReserveForType(cEventIKBActionEncoderArgTypeUint8)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return cEventIKBActionEncoderBadIndex
 	}
+
 	d.put1byte(startPos, int8(v))
 	return d.argCountIncPostfix()
 }
@@ -497,11 +580,13 @@ func (d *tEventIKBActionEncoded) PutArgUint8(v uint8) (argIdx int) {
 //
 // If it was successfully, returns the index of that argument.
 // Otherwise -1 is returned (argument has not been added).
-func (d *tEventIKBActionEncoded) PutArgUint16(v uint16) (argIdx int) {
+func (d *tIKBActionEncoded) PutArgUint16(v uint16) (argIdx int) {
+
 	startPos := d.argReserveForType(cEventIKBActionEncoderArgTypeUint16)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return cEventIKBActionEncoderBadIndex
 	}
+
 	d.put2bytes(startPos, int16(v))
 	return d.argCountIncPostfix()
 }
@@ -510,11 +595,13 @@ func (d *tEventIKBActionEncoded) PutArgUint16(v uint16) (argIdx int) {
 //
 // If it was successfully, returns the index of that argument.
 // Otherwise -1 is returned (argument has not been added).
-func (d *tEventIKBActionEncoded) PutArgUint32(v uint32) (argIdx int) {
+func (d *tIKBActionEncoded) PutArgUint32(v uint32) (argIdx int) {
+
 	startPos := d.argReserveForType(cEventIKBActionEncoderArgTypeUint32)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return cEventIKBActionEncoderBadIndex
 	}
+
 	d.put4bytes(startPos, int32(v))
 	return d.argCountIncPostfix()
 }
@@ -523,12 +610,14 @@ func (d *tEventIKBActionEncoded) PutArgUint32(v uint32) (argIdx int) {
 //
 // If it was successfully, returns the index of that argument.
 // Otherwise -1 is returned (argument has not been added).
-func (d *tEventIKBActionEncoded) PutArgUint64(v uint64) (argIdx int) {
+func (d *tIKBActionEncoded) PutArgUint64(v uint64) (argIdx int) {
+
 	startPos := d.argReserveForType(cEventIKBActionEncoderArgTypeUint64)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return cEventIKBActionEncoderBadIndex
 	}
 	d.put8bytes(startPos, int64(v))
+
 	return d.argCountIncPostfix()
 }
 
@@ -536,11 +625,13 @@ func (d *tEventIKBActionEncoded) PutArgUint64(v uint64) (argIdx int) {
 //
 // If it was successfully, returns the index of that argument.
 // Otherwise -1 is returned (argument has not been added).
-func (d *tEventIKBActionEncoded) PutArgFloat32(v float32) (argIdx int) {
+func (d *tIKBActionEncoded) PutArgFloat32(v float32) (argIdx int) {
+
 	startPos := d.argReserveForType(cEventIKBActionEncoderArgTypeFloat32)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return cEventIKBActionEncoderBadIndex
 	}
+
 	d.put4bytes(startPos, *(*int32)(unsafe.Pointer(&v)))
 	return d.argCountIncPostfix()
 }
@@ -549,11 +640,13 @@ func (d *tEventIKBActionEncoded) PutArgFloat32(v float32) (argIdx int) {
 //
 // If it was successfully, returns the index of that argument.
 // Otherwise -1 is returned (argument has not been added).
-func (d *tEventIKBActionEncoded) PutArgFloat64(v float64) (argIdx int) {
+func (d *tIKBActionEncoded) PutArgFloat64(v float64) (argIdx int) {
+
 	startPos := d.argReserveForType(cEventIKBActionEncoderArgTypeFloat64)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return cEventIKBActionEncoderBadIndex
 	}
+
 	d.put8bytes(startPos, *(*int64)(unsafe.Pointer(&v)))
 	return d.argCountIncPostfix()
 }
@@ -562,7 +655,7 @@ func (d *tEventIKBActionEncoded) PutArgFloat64(v float64) (argIdx int) {
 //
 // If it was successfully, returns the index of that argument.
 // Otherwise -1 is returned (argument has not been added).
-func (d *tEventIKBActionEncoded) PutArgString(v string) (argIdx int) {
+func (d *tIKBActionEncoded) PutArgString(v string) (argIdx int) {
 
 	// String encoding: Arg Type byte, string len byte, string content
 	strlen := byte(len(v))
@@ -587,7 +680,8 @@ func (d *tEventIKBActionEncoded) PutArgString(v string) (argIdx int) {
 // starting search from startIdx argument's index.
 //
 // Returns it and true as success if it is, or zero value and false if error.
-func (d *tEventIKBActionEncoded) GetArgInt(startIdx int) (v int, success bool) {
+func (d *tIKBActionEncoded) GetArgInt(startIdx int) (v int, success bool) {
+
 	var v_ int32
 	v_, success = d.GetArgInt32(startIdx)
 	return int(v_), success
@@ -597,7 +691,8 @@ func (d *tEventIKBActionEncoded) GetArgInt(startIdx int) (v int, success bool) {
 // starting search from startIdx argument's index.
 //
 // Returns it and true as success if it is, or zero value and false if error.
-func (d *tEventIKBActionEncoded) GetArgInt8(startIdx int) (v int8, success bool) {
+func (d *tIKBActionEncoded) GetArgInt8(startIdx int) (v int8, success bool) {
+
 	startPos := d.argGet(startIdx, cEventIKBActionEncoderArgTypeInt8)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return 0, false
@@ -609,7 +704,8 @@ func (d *tEventIKBActionEncoded) GetArgInt8(startIdx int) (v int8, success bool)
 // starting search from startIdx argument's index.
 //
 // Returns it and true as success if it is, or zero value and false if error.
-func (d *tEventIKBActionEncoded) GetArgInt16(startIdx int) (v int16, success bool) {
+func (d *tIKBActionEncoded) GetArgInt16(startIdx int) (v int16, success bool) {
+
 	startPos := d.argGet(startIdx, cEventIKBActionEncoderArgTypeInt16)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return 0, false
@@ -621,7 +717,8 @@ func (d *tEventIKBActionEncoded) GetArgInt16(startIdx int) (v int16, success boo
 // starting search from startIdx argument's index.
 //
 // Returns it and true as success if it is, or zero value and false if error.
-func (d *tEventIKBActionEncoded) GetArgInt32(startIdx int) (v int32, success bool) {
+func (d *tIKBActionEncoded) GetArgInt32(startIdx int) (v int32, success bool) {
+
 	startPos := d.argGet(startIdx, cEventIKBActionEncoderArgTypeInt32)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return 0, false
@@ -633,7 +730,8 @@ func (d *tEventIKBActionEncoded) GetArgInt32(startIdx int) (v int32, success boo
 // starting search from startIdx argument's index.
 //
 // Returns it and true as success if it is, or zero value and false if error.
-func (d *tEventIKBActionEncoded) GetArgInt64(startIdx int) (v int64, success bool) {
+func (d *tIKBActionEncoded) GetArgInt64(startIdx int) (v int64, success bool) {
+
 	startPos := d.argGet(startIdx, cEventIKBActionEncoderArgTypeInt64)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return 0, false
@@ -645,7 +743,8 @@ func (d *tEventIKBActionEncoded) GetArgInt64(startIdx int) (v int64, success boo
 // starting search from startIdx argument's index.
 //
 // Returns it and true as success if it is, or zero value and false if error.
-func (d *tEventIKBActionEncoded) GetArgUint(startIdx int) (v uint, success bool) {
+func (d *tIKBActionEncoded) GetArgUint(startIdx int) (v uint, success bool) {
+
 	var v_ uint32
 	v_, success = d.GetArgUint32(startIdx)
 	return uint(v_), success
@@ -655,7 +754,8 @@ func (d *tEventIKBActionEncoded) GetArgUint(startIdx int) (v uint, success bool)
 // starting search from startIdx argument's index.
 //
 // Returns it and true as success if it is, or zero value and false if error.
-func (d *tEventIKBActionEncoded) GetArgUint8(startIdx int) (v uint8, success bool) {
+func (d *tIKBActionEncoded) GetArgUint8(startIdx int) (v uint8, success bool) {
+
 	startPos := d.argGet(startIdx, cEventIKBActionEncoderArgTypeUint8)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return 0, false
@@ -668,7 +768,8 @@ func (d *tEventIKBActionEncoded) GetArgUint8(startIdx int) (v uint8, success boo
 // starting search from startIdx argument's index.
 //
 // Returns it and true as success if it is, or zero value and false if error.
-func (d *tEventIKBActionEncoded) GetArgUint16(startIdx int) (v uint16, success bool) {
+func (d *tIKBActionEncoded) GetArgUint16(startIdx int) (v uint16, success bool) {
+
 	startPos := d.argGet(startIdx, cEventIKBActionEncoderArgTypeUint16)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return 0, false
@@ -681,7 +782,8 @@ func (d *tEventIKBActionEncoded) GetArgUint16(startIdx int) (v uint16, success b
 // starting search from startIdx argument's index.
 //
 // Returns it and true as success if it is, or zero value and false if error.
-func (d *tEventIKBActionEncoded) GetArgUint32(startIdx int) (v uint32, success bool) {
+func (d *tIKBActionEncoded) GetArgUint32(startIdx int) (v uint32, success bool) {
+
 	startPos := d.argGet(startIdx, cEventIKBActionEncoderArgTypeUint32)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return 0, false
@@ -694,7 +796,8 @@ func (d *tEventIKBActionEncoded) GetArgUint32(startIdx int) (v uint32, success b
 // starting search from startIdx argument's index.
 //
 // Returns it and true as success if it is, or zero value and false if error.
-func (d *tEventIKBActionEncoded) GetArgUint64(startIdx int) (v uint64, success bool) {
+func (d *tIKBActionEncoded) GetArgUint64(startIdx int) (v uint64, success bool) {
+
 	startPos := d.argGet(startIdx, cEventIKBActionEncoderArgTypeUint64)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return 0, false
@@ -707,7 +810,8 @@ func (d *tEventIKBActionEncoded) GetArgUint64(startIdx int) (v uint64, success b
 // starting search from startIdx argument's index.
 //
 // Returns it and true as success if it is, or zero value and false if error.
-func (d *tEventIKBActionEncoded) GetArgFloat32(startIdx int) (v float32, success bool) {
+func (d *tIKBActionEncoded) GetArgFloat32(startIdx int) (v float32, success bool) {
+
 	startPos := d.argGet(startIdx, cEventIKBActionEncoderArgTypeFloat32)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return 0, false
@@ -720,7 +824,8 @@ func (d *tEventIKBActionEncoded) GetArgFloat32(startIdx int) (v float32, success
 // starting search from startIdx argument's index.
 //
 // Returns it and true as success if it is, or zero value and false if error.
-func (d *tEventIKBActionEncoded) GetArgFloat64(startIdx int) (v float64, success bool) {
+func (d *tIKBActionEncoded) GetArgFloat64(startIdx int) (v float64, success bool) {
+
 	startPos := d.argGet(startIdx, cEventIKBActionEncoderArgTypeFloat64)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		return 0, false
@@ -733,7 +838,8 @@ func (d *tEventIKBActionEncoded) GetArgFloat64(startIdx int) (v float64, success
 // starting search from startIdx argument's index.
 //
 // Returns it and true as success if it is, or zero value and false if error.
-func (d *tEventIKBActionEncoded) GetArgString(startIdx int) (v string, success bool) {
+func (d *tIKBActionEncoded) GetArgString(startIdx int) (v string, success bool) {
+
 	startPos := d.argGet(startIdx, cEventIKBActionEncoderArgTypeString)
 	if startPos == cEventIKBActionEncoderPosERROR {
 		v, success = "", false
@@ -746,43 +852,30 @@ func (d *tEventIKBActionEncoded) GetArgString(startIdx int) (v string, success b
 }
 
 // copy returns a copy of the current encoded IKB action d.
-func (d *tEventIKBActionEncoded) copy() (copy *tEventIKBActionEncoded) {
+func (d *tIKBActionEncoded) copy() (copy *tIKBActionEncoded) {
+
 	copied := *d
 	return &copied
 }
 
-// tEventIKBActionEncodedDumpPart is type for method dump of
-// tEventIKBActionEncoded type.
-//
-// This type represents one node of encoded IKB action tEventIKBActionEncoded.
-// All fields has JSON tags and it's easy to JSON dump output.
-type tEventIKBActionEncodedDumpPart struct {
-	Type        string      `json:"type"`
-	Pos         byte        `json:"pos"`
-	PosType     byte        `json:"pos_type,omitempty"`
-	PosContent  byte        `json:"pos_value,omitempty"`
-	TypeEncoded byte        `json:"type_encoded,omitempty"`
-	Value       interface{} `json:"value"`
-}
-
 // dump returns a complete debug information about encoded IKB action d.
 // Each slice element represent one entity of encoded IKB action d.
-func (d *tEventIKBActionEncoded) dump() []tEventIKBActionEncodedDumpPart {
+func (d *tIKBActionEncoded) dump() []tIKBActionEncodedDumpNode {
 
 	// make result slice with length == len of encoded args +
 	// id + ssid + args counter + args free index
 	argCount := d.ArgCount()
-	dumpRes := make([]tEventIKBActionEncodedDumpPart, argCount+4)
+	dumpRes := make([]tIKBActionEncodedDumpNode, argCount+4)
 
 	// Reflect ID
-	dumpRes[0].Type = "Encoded ID"
-	dumpRes[0].Pos = cEventIKBActionEncoderPosID
-	dumpRes[0].Value = d.GetID()
+	dumpRes[0].Type = "Encoded View ID"
+	dumpRes[0].Pos = cEventIKBActionEncoderPosViewID
+	dumpRes[0].Value = d.GetViewID()
 
 	// Reflect SSID
 	dumpRes[1].Type = "Session ID (SSID)"
-	dumpRes[1].Pos = cEventIKBActionEncoderPosSSID
-	dumpRes[1].Value = d.GetSSID()
+	dumpRes[1].Pos = cEventIKBActionEncoderPosSessionID
+	dumpRes[1].Value = d.GetSessionID()
 
 	// Reflect args counter
 	dumpRes[2].Type = "Arguments counter"
@@ -797,10 +890,11 @@ func (d *tEventIKBActionEncoded) dump() []tEventIKBActionEncodedDumpPart {
 	// Save info about arguments
 	pos := cEventIKBActionEncoderPosArgsContent
 	for i := 0; i < argCount; i++ {
+
 		dumpRes[4+i].Type = "Argument (" + d.argType2S(d[pos]) + ")"
 		dumpRes[4+i].Pos = pos
 		dumpRes[4+i].PosType = pos
-		dumpRes[4+i].TypeEncoded = d[pos]
+		dumpRes[4+i].TypeHeader = d[pos]
 
 		// Save content position
 		// By default content starts with offset 1
@@ -866,7 +960,7 @@ func (d *tEventIKBActionEncoded) dump() []tEventIKBActionEncodedDumpPart {
 }
 
 // init initializes the current encoded IKB action object d.
-func (d *tEventIKBActionEncoded) init() {
+func (d *tIKBActionEncoded) init() {
 	d[cEventIKBActionEncoderPosArgsFreePos] =
 		cEventIKBActionEncoderPosArgsContent
 }

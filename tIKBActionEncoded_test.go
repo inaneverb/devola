@@ -27,35 +27,37 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/stretchr/testify/assert"
+	testify "github.com/stretchr/testify/assert"
 )
 
+// todo: Add another tests
+
 // TestTEventIKBActionEncoded_ValidTEventIKBIDEncoded checks whether
-// real size of tEventIKBIDEncoded type is compatible with
-// encode/decode algorithm in tEventIKBActionEncoded type.
+// real size of tViewIDEncoded type is compatible with
+// encode/decode algorithm in tIKBActionEncoded type.
 func TestTEventIKBActionEncoded_ValidTEventIKBIDEncoded(t *testing.T) {
 
-	ikbid := tEventIKBIDEncoded(cEventIKBDataEncodedNull)
-	mustSize := cEventIKBActionEncoderPosSSID - cEventIKBActionEncoderPosID
+	ikbid := tViewIDEncoded(cEventIKBDataEncodedNull)
+	mustSize := cEventIKBActionEncoderPosSessionID - cEventIKBActionEncoderPosViewID
 
-	testMsg := "Sizeof tEventIKBIDEncoded is incompatible with predefined " +
-		"cEventIKBActionEncoderPosID and cEventIKBActionEncoderPosSSID " +
+	testMsg := "Sizeof tViewIDEncoded is incompatible with predefined " +
+		"cEventIKBActionEncoderPosViewID and cEventIKBActionEncoderPosSessionID " +
 		"position constants."
 
-	assert.True(t, unsafe.Sizeof(ikbid) == uintptr(mustSize), testMsg)
+	testify.True(t, unsafe.Sizeof(ikbid) == uintptr(mustSize), testMsg)
 }
 
 // TestTEventIKBActionEncoded_ValidTSessionID checks whether
-// real size of TSessionID type is compatible with
-// encode/decode algorithm in tEventIKBActionEncoded type.
+// real size of tSessionID type is compatible with
+// encode/decode algorithm in tIKBActionEncoded type.
 func TestTEventIKBActionEncoded_ValidTSessionID(t *testing.T) {
 
-	ssid := TSessionID(CSessionIDNil)
-	mustSize := CEventIKBActionEncoderePosArgs - cEventIKBActionEncoderPosSSID
+	ssid := tSessionID(cSessionIDNil)
+	mustSize := CEventIKBActionEncoderePosArgs - cEventIKBActionEncoderPosSessionID
 
-	testMsg := "Sizeof TSessionID is incompatible with predefined " +
-		"cEventIKBActionEncoderPosSSID and CEventIKBActionEncoderePosArgs " +
+	testMsg := "Sizeof tSessionID is incompatible with predefined " +
+		"cEventIKBActionEncoderPosSessionID and CEventIKBActionEncoderePosArgs " +
 		"position constants."
 
-	assert.True(t, unsafe.Sizeof(ssid) == uintptr(mustSize), testMsg)
+	testify.True(t, unsafe.Sizeof(ssid) == uintptr(mustSize), testMsg)
 }
