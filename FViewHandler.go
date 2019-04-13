@@ -27,4 +27,4 @@ package tgbot
 // as handler to the event and it will be called when that event is occurred.
 //
 // More info: tReceiver, TCtx, tBehaviourCreator, TBot.
-type FViewHandler func(c *Ctx)
+type FViewHandler func(c *TCtx)

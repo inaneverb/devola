@@ -45,4 +45,4 @@ package tgbot
 // and handler calls.
 //
 // More info: tReceiver, TCtx, tBehaviourCreator, TBot.
-type FViewMiddleware func(c *Ctx) bool
+type FViewMiddleware func(c *TCtx) bool
