@@ -24,6 +24,7 @@
 package tgbot
 
 // tEventType represents type of event that is occurred.
+//
 // This is a part of tEvent object, which is a part of TCtx.
 //
 // Thus you can always to figure out inside handler which kind of event
