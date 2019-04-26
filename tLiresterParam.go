@@ -27,102 +27,127 @@ import (
 	"time"
 )
 
-// 'tLiresterParam' is the alias to function that applying to the some
-// lirester object.
-// It uses as parameters for lirester constructor to initialize consts.
+// tLiresterParam is an alias to function that takes a Lirester object
+// and changes its internal constants and values.
+// 
+// Used for Lirester's consturctor (makeLirester) or tLirester.RequestRestartWith.
 type tLiresterParam func(l *tLirester)
 
-// 'LiresterMainLoopDelay' creates the new lirester creator parameter
-// that can be used as argument for lirester constructor.
-// This parameter means, how often lirester main loop timer will be tick.
-// Allowable values: (100ms..1min).
-func LiresterMainLoopDelay(delay time.Duration) tLiresterParam {
-	if delay <= 100*time.Microsecond || delay >= 1*time.Minute {
-		return nil
+// tLiresterParams is the type of storage of tLirester params.
+// Is a part of tParams type.
+type tLiresterParams struct {
+
+	// Changes the main loop ticker delay to the passed value.
+	// Delay must be in the [100ms..1min] range.
+	// More info: tLirester.consts.mainLoopDelay field.
+	MainLoopDelay func(delay time.Duration) tLiresterParam
+
+	// Changes the Lirester internal chat's lifetime.
+	// Lifetime must be in the [1min..1day] range.
+	// More info: tLirester.consts.chatLifeTime field.
+	LChatLifetime func(lifetime time.Duration) tLiresterParam
+
+	// Params to change some values about working Lirester around chats
+	// with users.
+	UserChat struct {
+
+		// Changes the value how many messages can be send to user chat 
+		// per each iteration.
+		// Value must be in the [1..99] range.
+		// More info: tLirester.consts.cLiresterUserChatN field.
+		MessagesPerIter func(num uint8) tLiresterParam
+
+		// Changes the duration of user chat's iteration.
+		// Value mist be in the [100ms..1h] range.
+		// More info: tLirester.consts.cLiresterUserChatT field.
+		IterPeriod func(period time.Duration) tLiresterParam
 	}
-	return func(l *tLirester) {
-		l.consts.mainLoopDelay = delay.Nanoseconds()
+
+	// Params to change some values about working Lirester around group chats,
+	// channels, etc.
+	GroupChat struct {
+
+		// Changes the value how many messages can be send to user chat 
+		// per each iteration.
+		// Value must be in the [1..99] range.
+		// More info: tLirester.consts.cLiresterUserChatN field.
+		MessagesPerIter func(num uint8) tLiresterParam
+
+		// Changes the duration of user chat's iteration.
+		// Value mist be in the [100ms..1h] range.
+		// More info: tLirester.consts.cLiresterUserChatT field.
+		IterPeriod func(period time.Duration) tLiresterParam
 	}
 }
 
-// 'LiresterMainLoopDelay' creates the new lirester creator parameter
-// that can be used as argument for lirester constructor.
-// This parameter means, how much time the lirester chat will exist in the
-// internal lirester structure.
-// Less means more CPU load and less RAM load,
-// More means less CPU load and more RAM load.
-// Allowable values: (1min..1day).
-func LiresterChatLifetime(lifetime time.Duration) tLiresterParam {
-	if lifetime <= 1*time.Minute || lifetime >= 24*time.Hour {
-		return nil
-	}
-	return func(l *tLirester) {
-		l.consts.chatLifeTime = lifetime.Nanoseconds()
-	}
-}
+// paramsLirester is the storage of tLirster params.
+// Is a part of Params object.
+var paramsLirester = tLiresterParams{}
 
-// 'LiresterMainLoopDelay' creates the new lirester creator parameter
-// that can be used as argument for lirester constructor.
-// This parameter means, how much messages can be allowed by lirester
-// for user chats without cleanup until the limit is reached.
-// It's not recommend to set this value more than 1, 'cause in another cases
-// you can see the 429 Telegram error.
-// Allowable values: (0..100].
-func LiresterUserChatMessageNumberPerIter(num uint8) tLiresterParam {
-	if num == 0 || num > 100 {
-		return nil
-	}
-	return func(l *tLirester) {
-		l.consts.userChatMsgNumPerIter = num
-	}
-}
+// Initializes paramsLirester object.
+///
+// There is no in-place initialization because tLiresterParams have
+// nested structs and a separate initialization reduces the amount of code
+// and increases readability.
+func init() {
 
-// 'LiresterMainLoopDelay' creates the new lirester creator parameter
-// that can be used as argument for lirester constructor.
-// This parameter means how much time must be passed until cleanup
-// isn't started for some sent message to user chats.
-// Thus, increasing this value means increasing the one 'iteration' range.
-// It's not recommend to set this value less than 1sec, 'cause in another cases
-// you can see the 429 Telegram error.
-// Allowable values: (100ms..1hr).
-func LiresterUserChatCleanupDelay(delay time.Duration) tLiresterParam {
-	if delay <= 100*time.Microsecond || delay >= 1*time.Hour {
-		return nil
+	paramsLirester.MainLoopDelay = 
+	func(delay time.Duration) tLiresterParam {
+		if delay < 100 * time.Microsecond || delay > 1 * time.Minute {
+			return tLiresterParam(nil)
+		}
+		return tLiresterParam(func(l *tLirester) {
+			l.consts.mainLoopDelay = delay
+		})
 	}
-	return func(l *tLirester) {
-		l.consts.userChatCleanupDelay = delay.Nanoseconds()
-	}
-}
 
-// 'LiresterMainLoopDelay' creates the new lirester creator parameter
-// that can be used as argument for lirester constructor.
-// This parameter means, how much messages can be allowed by lirester
-// for group chats without cleanup until the limit is reached.
-// It's not recommend to set this value more than 20, 'cause in another cases
-// you can see the 429 Telegram error.
-// Allowable values: (0..100].
-func LiresterGroupChatMessageNumberPerIter(num uint8) tLiresterParam {
-	if num > 100 {
-		return nil
+	params.Lirester.LChatLifetime = 
+	func(lifetime time.Duration) tLiresterParam {
+		if lifetime < 1 * time.Minute || lifetime > 24 * time.Hour {
+			return tLiresterParam(nil)
+		}
+		return tLiresterParam(func(l *tLirester) {
+			l.consts.chatLifeTime = lifetime.Nanoseconds()
+		})
 	}
-	return func(l *tLirester) {
-		l.consts.groupChatMsgNumPerIter = num
-	}
-}
 
-// 'LiresterMainLoopDelay' creates the new lirester creator parameter
-// that can be used as argument for lirester constructor.
-// This parameter means how much time must be passed until cleanup
-// isn't started for some sent message to group chats.
-// Thus, increasing this value means increasing the one 'iteration' range.
-// It's not recommend to set this value less than 1min, 'cause in another cases
-// you can see the 429 Telegram error.
-// Allowable values: (100ms..1hr).
-func LiresterGroupChatCleanupDelay(delay time.Duration) tLiresterParam {
-	if delay <= 100*time.Microsecond || delay >= 1*time.Hour {
-		return nil
+	paramsLirester.UserChat.MessagesPerIter = 
+	func(num uint8) tLiresterParam {
+		if num == 0 || num > 100 {
+			return tLiresterParam(nil)
+		}
+		return tLiresterParam(func(l *tLirester) {
+			l.consts.userChatMsgNumPerIter = num
+		})
 	}
-	return func(l *tLirester) {
-		l.consts.groupChatCleanupDelay = delay.Nanoseconds()
+
+	paramsLirester.UserChat.IterPeriod = 
+	func(period time.Duration) tLiresterParam {
+		if delay < 100 * time.Microsecond || delay > 1 * time.Hour {
+			return tLiresterParam(nil)
+		}
+		return tLiresterParam(func(l *tLirester) {
+			l.consts.userChatCleanupDelay = delay.Nanoseconds()
+		})
+	}
+
+	paramsLirester.GroupChat.MessagesPerIter = 
+	func(num uint8) tLiresterParam {
+		if num == 0 || num > 100 {
+			return tLiresterParam(nil)
+		}
+		return tLiresterParam(func(l *tLirester) {
+			l.consts.groupChatMsgNumPerIter = num
+		})
+	}
+
+	paramsLirester.GroupChat.IterPeriod = 
+	func(period time.Duration) tLiresterParam {
+		if delay < 100 * time.Microsecond || delay > 1 * time.Hour {
+			return tLiresterParam(nil)
+		}
+		return tLiresterParam(func(l *tLirester) {
+			l.consts.groupChatCleanupDelay = delay.Nanoseconds()
+		})
 	}
 }
