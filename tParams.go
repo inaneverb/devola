@@ -44,4 +44,4 @@ type tParams struct {
 var Params tParams
 
 // By expr above memory already allocated for tParams struct and all nested.
-// Params' fields (nested structs) initialized by its init functions. 
+// Params' fields (nested structs) initialized by its init functions.

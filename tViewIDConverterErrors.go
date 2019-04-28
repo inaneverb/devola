@@ -64,27 +64,32 @@ type tViewIDConverterErrors struct {
 	LimitReached *tViewIDConverterError
 }
 
+// Initializes ViewIDConverter field of Errors object.
+//
+// Direct initialization tViewIDConverterErrors errors storage as a part of
+// tErrors object.
+func init() {
+
+	Errors.ViewIDConverter.InvalidViewID = &tViewIDConverterError{
+		What: "View ID Converter: Invalid View ID.",
+	}
+
+	Errors.ViewIDConverter.InvalidEncodedViewID = &tViewIDConverterError{
+		What: "View ID Converter: Invalid encoded View ID.",
+	}
+
+	Errors.ViewIDConverter.UnregisteredViewID = &tViewIDConverterError{
+		What: "View ID Converter: This View ID is not registered.",
+	}
+
+	Errors.ViewIDConverter.AlreadyRegisteredViewID = &tViewIDConverterError{
+		What: "View ID Converter: This View ID is already registered.",
+	}
+
+	Errors.ViewIDConverter.LimitReached = &tViewIDConverterError{
+		What: "View ID Converter: Limit of registered View IDs is reached.",
+	}
+}
+
 // eViewIDConverter is the storage of tViewIDConverter errors.
 // Is a part of Errors object.
-var eViewIDConverter = tViewIDConverterErrors{
-
-	InvalidViewID: &tViewIDConverterError{
-		What: "View ID Converter: Invalid View ID.",
-	},
-
-	InvalidEncodedViewID: &tViewIDConverterError{
-		What: "View ID Converter: Invalid encoded View ID.",
-	},
-
-	UnregisteredViewID: &tViewIDConverterError{
-		What: "View ID Converter: This View ID is not registered.",
-	},
-
-	AlreadyRegisteredViewID: &tViewIDConverterError{
-		What: "View ID Converter: This View ID is already registered.",
-	},
-
-	LimitReached: &tViewIDConverterError{
-		What: "View ID Converter: Limit of registered View IDs is reached.",
-	},
-}

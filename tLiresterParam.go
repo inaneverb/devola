@@ -31,7 +31,7 @@ import (
 
 // tLiresterParam is an alias to function that takes a Lirester object
 // and changes its internal constants and values.
-// 
+//
 // Used for Lirester's consturctor (makeLirester) or tLirester.RequestRestartWith.
 type tLiresterParam func(l *tLirester)
 
@@ -53,7 +53,7 @@ type tLiresterParams struct {
 	// with users.
 	UserChat struct {
 
-		// Changes the value how many messages can be send to user chat 
+		// Changes the value how many messages can be send to user chat
 		// per each iteration.
 		// Value must be in the [1..99] range.
 		// More info: tLirester.consts.cLiresterUserChatN field.
@@ -69,7 +69,7 @@ type tLiresterParams struct {
 	// channels, etc.
 	GroupChat struct {
 
-		// Changes the value how many messages can be send to user chat 
+		// Changes the value how many messages can be send to user chat
 		// per each iteration.
 		// Value must be in the [1..99] range.
 		// More info: tLirester.consts.cLiresterUserChatN field.
@@ -82,69 +82,69 @@ type tLiresterParams struct {
 	}
 }
 
-// Initializes paramsLirester object.
+// Initializes Lirester field of Params object.
 //
 // Direct initialization tLiresterParams params storage as a part of tParams
 // object.
 func init() {
 
-	Params.Lirester.MainLoopDelay = 
-	func(delay time.Duration) tLiresterParam {
-		if delay < 100 * time.Microsecond || delay > 1 * time.Minute {
-			return tLiresterParam(nil)
+	Params.Lirester.MainLoopDelay =
+		func(delay time.Duration) tLiresterParam {
+			if delay < 100*time.Microsecond || delay > 1*time.Minute {
+				return tLiresterParam(nil)
+			}
+			return tLiresterParam(func(l *tLirester) {
+				l.consts.mainLoopDelay = delay
+			})
 		}
-		return tLiresterParam(func(l *tLirester) {
-			l.consts.mainLoopDelay = delay
-		})
-	}
 
-	Params.Lirester.LChatLifetime = 
-	func(lifetime time.Duration) tLiresterParam {
-		if lifetime < 1 * time.Minute || lifetime > 24 * time.Hour {
-			return tLiresterParam(nil)
+	Params.Lirester.LChatLifetime =
+		func(lifetime time.Duration) tLiresterParam {
+			if lifetime < 1*time.Minute || lifetime > 24*time.Hour {
+				return tLiresterParam(nil)
+			}
+			return tLiresterParam(func(l *tLirester) {
+				l.consts.chatLifeTime = lifetime.Nanoseconds()
+			})
 		}
-		return tLiresterParam(func(l *tLirester) {
-			l.consts.chatLifeTime = lifetime.Nanoseconds()
-		})
-	}
 
-	Params.Lirester.UserChat.MessagesPerIter = 
-	func(num uint8) tLiresterParam {
-		if num == 0 || num > 100 {
-			return tLiresterParam(nil)
+	Params.Lirester.UserChat.MessagesPerIter =
+		func(num uint8) tLiresterParam {
+			if num == 0 || num > 100 {
+				return tLiresterParam(nil)
+			}
+			return tLiresterParam(func(l *tLirester) {
+				l.consts.userChatMsgNumPerIter = num
+			})
 		}
-		return tLiresterParam(func(l *tLirester) {
-			l.consts.userChatMsgNumPerIter = num
-		})
-	}
 
-	Params.Lirester.UserChat.IterPeriod = 
-	func(period time.Duration) tLiresterParam {
-		if delay < 100 * time.Microsecond || delay > 1 * time.Hour {
-			return tLiresterParam(nil)
+	Params.Lirester.UserChat.IterPeriod =
+		func(period time.Duration) tLiresterParam {
+			if delay < 100*time.Microsecond || delay > 1*time.Hour {
+				return tLiresterParam(nil)
+			}
+			return tLiresterParam(func(l *tLirester) {
+				l.consts.userChatCleanupDelay = delay.Nanoseconds()
+			})
 		}
-		return tLiresterParam(func(l *tLirester) {
-			l.consts.userChatCleanupDelay = delay.Nanoseconds()
-		})
-	}
 
-	Params.Lirester.GroupChat.MessagesPerIter = 
-	func(num uint8) tLiresterParam {
-		if num == 0 || num > 100 {
-			return tLiresterParam(nil)
+	Params.Lirester.GroupChat.MessagesPerIter =
+		func(num uint8) tLiresterParam {
+			if num == 0 || num > 100 {
+				return tLiresterParam(nil)
+			}
+			return tLiresterParam(func(l *tLirester) {
+				l.consts.groupChatMsgNumPerIter = num
+			})
 		}
-		return tLiresterParam(func(l *tLirester) {
-			l.consts.groupChatMsgNumPerIter = num
-		})
-	}
 
-	Params.Lirester.GroupChat.IterPeriod = 
-	func(period time.Duration) tLiresterParam {
-		if delay < 100 * time.Microsecond || delay > 1 * time.Hour {
-			return tLiresterParam(nil)
+	Params.Lirester.GroupChat.IterPeriod =
+		func(period time.Duration) tLiresterParam {
+			if delay < 100*time.Microsecond || delay > 1*time.Hour {
+				return tLiresterParam(nil)
+			}
+			return tLiresterParam(func(l *tLirester) {
+				l.consts.groupChatCleanupDelay = delay.Nanoseconds()
+			})
 		}
-		return tLiresterParam(func(l *tLirester) {
-			l.consts.groupChatCleanupDelay = delay.Nanoseconds()
-		})
-	}
 }
