@@ -27,6 +27,8 @@ import (
 	"time"
 )
 
+// todo: Add params to enable profiler
+
 // tLiresterParam is an alias to function that takes a Lirester object
 // and changes its internal constants and values.
 // 
@@ -80,18 +82,13 @@ type tLiresterParams struct {
 	}
 }
 
-// paramsLirester is the storage of tLirster params.
-// Is a part of Params object.
-var paramsLirester = tLiresterParams{}
-
 // Initializes paramsLirester object.
-///
-// There is no in-place initialization because tLiresterParams have
-// nested structs and a separate initialization reduces the amount of code
-// and increases readability.
+//
+// Direct initialization tLiresterParams params storage as a part of tParams
+// object.
 func init() {
 
-	paramsLirester.MainLoopDelay = 
+	Params.Lirester.MainLoopDelay = 
 	func(delay time.Duration) tLiresterParam {
 		if delay < 100 * time.Microsecond || delay > 1 * time.Minute {
 			return tLiresterParam(nil)
@@ -101,7 +98,7 @@ func init() {
 		})
 	}
 
-	params.Lirester.LChatLifetime = 
+	Params.Lirester.LChatLifetime = 
 	func(lifetime time.Duration) tLiresterParam {
 		if lifetime < 1 * time.Minute || lifetime > 24 * time.Hour {
 			return tLiresterParam(nil)
@@ -111,7 +108,7 @@ func init() {
 		})
 	}
 
-	paramsLirester.UserChat.MessagesPerIter = 
+	Params.Lirester.UserChat.MessagesPerIter = 
 	func(num uint8) tLiresterParam {
 		if num == 0 || num > 100 {
 			return tLiresterParam(nil)
@@ -121,7 +118,7 @@ func init() {
 		})
 	}
 
-	paramsLirester.UserChat.IterPeriod = 
+	Params.Lirester.UserChat.IterPeriod = 
 	func(period time.Duration) tLiresterParam {
 		if delay < 100 * time.Microsecond || delay > 1 * time.Hour {
 			return tLiresterParam(nil)
@@ -131,7 +128,7 @@ func init() {
 		})
 	}
 
-	paramsLirester.GroupChat.MessagesPerIter = 
+	Params.Lirester.GroupChat.MessagesPerIter = 
 	func(num uint8) tLiresterParam {
 		if num == 0 || num > 100 {
 			return tLiresterParam(nil)
@@ -141,7 +138,7 @@ func init() {
 		})
 	}
 
-	paramsLirester.GroupChat.IterPeriod = 
+	Params.Lirester.GroupChat.IterPeriod = 
 	func(period time.Duration) tLiresterParam {
 		if delay < 100 * time.Microsecond || delay > 1 * time.Hour {
 			return tLiresterParam(nil)
