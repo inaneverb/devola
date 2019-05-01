@@ -32,7 +32,7 @@ import (
 type tViewIDConverterError struct {
 
 	// What represents a body of error.
-	What string `json:"method"`
+	What string `json:"error"`
 
 	// Arg only for errors in Register method.
 	// Meaning of arg depends by error.

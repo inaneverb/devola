@@ -90,6 +90,3 @@ func init() {
 		What: "View ID Converter: Limit of registered View IDs is reached.",
 	}
 }
-
-// eViewIDConverter is the storage of tViewIDConverter errors.
-// Is a part of Errors object.
