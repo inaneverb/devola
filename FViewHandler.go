@@ -26,5 +26,5 @@ package tgbot
 // FViewHandler is the function, callback, that registered by you
 // as handler to the event and it will be called when that event is occurred.
 //
-// More info: tReceiver, TCtx, tBehaviourCreator, TBot.
+// More info: tReceiver, TCtx, TBot.
 type FViewHandler func(c *TCtx)

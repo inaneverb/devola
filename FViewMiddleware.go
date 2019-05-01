@@ -44,5 +44,5 @@ package tgbot
 // But there is no internal modifies of TCtx object between middleware
 // and handler calls.
 //
-// More info: tReceiver, TCtx, tBehaviourCreator, TBot.
+// More info: tReceiver, TCtx, TBot.
 type FViewMiddleware func(c *TCtx) bool
