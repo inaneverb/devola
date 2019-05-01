@@ -53,14 +53,14 @@ type tEvent struct {
 
 	// The occurred event's data. Text, keyboard button text, inline keyboard
 	// View ID, etc.
-	Data tEventData `json:"data"`
+	Data tEventData `json:"data,omitempty"`
 
 	// Encoded IKB action.
 	// It's a pointer to avoid reallocate memory for tIKBActionEncoded object
 	// and it is a pointert to the Data field with casted type.
 	//
 	// Not nil only if Type == CEventTypeInlineKeyboardButton.
-	ikbae *tIKBActionEncoded
+	ikbae *tIKBActionEncoded `json:"-"`
 }
 
 // makeEvent creates a new tEvent object with passed event type and event data,
