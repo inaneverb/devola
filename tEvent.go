@@ -63,6 +63,13 @@ type tEvent struct {
 	ikbae *tIKBActionEncoded `json:"-"`
 }
 
+// cp creates a copy of current event and returns it.
+func (e *tEvent) cp() *tEvent {
+	
+	copy := makeEvent(e.Type, e.Data)
+	return &copy
+}
+
 // makeEvent creates a new tEvent object with passed event type and event data,
 // but also initializes IKB encoded action pointer if it is IKB event.
 func makeEvent(typ tEventType, data tEventData) *tEvent {
