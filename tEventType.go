@@ -37,31 +37,26 @@ type tEventType uint8
 // Use these constants to figure out what kind of event is occurred
 // (by comparing tEventType).
 const (
-	// Internal type.
-	// A marked invalid type.
+
+	// Marker of invalid type.
 	cEventTypeInvalid tEventType = 0 + iota
 
-	// Internal type.
-	// A not fully determined type,
-	// but it is either keyboard button type or text type.
-	cEventTypeKeyboardButtonOrText tEventType = 2
-
-	// A chat text command.
+	// Chat text command.
 	// tEvent's Data field represents a lowercase command without arguments.
 	CEventTypeCommand tEventType = 100
 
-	// A pressed keyboard button.
+	// Pressed keyboard button.
 	// Technically this is a text (in a chat), but a text sent by
 	// pressing to the keyboard button.
 	// tEvent's Data field represents this keyboard button data.
 	CEventTypeKeyboardButton tEventType = 101
 
-	// A typed text.
+	// Typed text.
 	// tEvent's Data field represents the whole text but with trimmed
 	// leading and trailing spaces.
 	CEventTypeText tEventType = 102
 
-	// A pressed inline keyboard button.
+	// Pressed inline keyboard button.
 	// tEvent's Data field stored TAction value, representing the your
 	// action causes occured event.
 	CEventTypeInlineKeyboardButton tEventType = 200
