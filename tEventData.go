@@ -37,3 +37,11 @@ package tgbot
 //
 // More info: tIKBActionEncoded, tViewID, tViewIDConverter, tEvent, TCtx.
 type tEventData string
+
+// Constants of tEventData.
+// Use these constants to represent special event cases.
+const (
+	
+	// A marker of invalid data.
+	cEventDataNull tEventData = ""
+)
