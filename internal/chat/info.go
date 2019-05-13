@@ -16,7 +16,7 @@ type Info struct {
 	StartedUnixstamp      int64 `json:"started_unixstamp"`
 	LastActivityUnixstamp int64 `json:"last_activity_unixstamp"`
 	//UsedLocale i18n.LocaleName
-	currentSSID tSessionID `json:"current_ssid"`
+	currentSSID SessionID `json:"current_ssid"`
 }
 
 //
