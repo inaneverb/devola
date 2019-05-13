@@ -33,6 +33,8 @@ func (w *Watcher) Start() *Watcher {
 	if w == nil {
 		return nil
 	}
+
+	panic("implement me")
 }
 
 //
@@ -41,6 +43,8 @@ func (w *Watcher) Stop() *Watcher {
 	if w == nil {
 		return nil
 	}
+
+	panic("implement me")
 }
 
 //
@@ -49,4 +53,6 @@ func (w *Watcher) For(action Action) *Watcher {
 	if w == nil {
 		return nil
 	}
+
+	panic("implement me")
 }

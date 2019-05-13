@@ -29,15 +29,15 @@ type Profiler struct {
 
 //
 func (p *Profiler) IsEnabled() bool {
-
+	panic("implement me")
 }
 
 //
 func (p *Profiler) IsEnabledFor(action Action) bool {
-
+	panic("implement me")
 }
 
 //
 func (p *Profiler) WatchIf(cond bool) *Watcher {
-
+	panic("implement me")
 }
