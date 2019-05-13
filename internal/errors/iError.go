@@ -21,7 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-package tgbot
+package errors
 
 // iError is the interface for all internal Telegram SDK error types.
 type iError interface {
