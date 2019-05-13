@@ -25,5 +25,5 @@ const (
 // IsValid returns true only if current session ID is valid session ID
 // and isn't cSessionIDNil or some another bad const (in the future).
 func (id SessionID) IsValid() bool {
-	return id != cSessionIDNil
+	return id != CSessionIDNil
 }
