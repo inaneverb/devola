@@ -3,7 +3,7 @@
 // Contacts: <qioalice@gmail.com>.
 // License: https://opensource.org/licenses/MIT
 
-package tgbot
+package view
 
 // ID represents a RAW identifier of View.
 //
