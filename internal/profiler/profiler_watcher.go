@@ -21,7 +21,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-package tgbot
+package profiler
 
 //
-type tProfilerAction string
+type Watcher struct {
+}
+
+//
+func (w *Watcher) Start() *Watcher {
+
+	if w == nil {
+		return nil
+	}
+}
+
+//
+func (w *Watcher) Stop() *Watcher {
+
+	if w == nil {
+		return nil
+	}
+}
+
+//
+func (w *Watcher) For(action Action) *Watcher {
+
+	if w == nil {
+		return nil
+	}
+}

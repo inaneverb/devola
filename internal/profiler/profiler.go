@@ -21,25 +21,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-package tgbot
-
+package profiler
 
 //
-type tProfiler struct {
+type Profiler struct {
+}
+
+//
+func (p *Profiler) IsEnabled() bool {
 
 }
 
 //
-func (p *tProfiler) isEnabled() bool {
-	
+func (p *Profiler) IsEnabledFor(action Action) bool {
+
 }
 
 //
-func (p *tProfiler) isEnabledFor(action tProfilerAction) bool {
-	
-}
-
-//
-func (p *tProfiler) WatchIf(cond bool) *tProfilerWatcher {
+func (p *Profiler) WatchIf(cond bool) *Watcher {
 
 }
