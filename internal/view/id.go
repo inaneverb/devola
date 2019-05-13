@@ -11,7 +11,7 @@ package tgbot
 // In internal SDK parts View ID represents by its encoded format using
 // tViewIDEncoded type and tViewIDConverter to encode/decode operations.
 //
-// More info: tViewIDEncoded, tView, tViewIDConverter, tIKBActionEncoded,
+// More info: IDEnc, tView, tViewIDConverter, tIKBActionEncoded,
 // tCtx, tSender.
 type ID string
 
@@ -19,7 +19,7 @@ type ID string
 const (
 
 	// Represents a nil View ID and an indicator of some error.
-	cViewIDNull ID = ""
+	CIDNil ID = ""
 )
 
 // IsValid returns true only if vid is valid ID value.
@@ -28,5 +28,5 @@ const (
 // from double underscore (reserved for internal parts).
 func (id ID) IsValid() bool {
 
-	return vid != cViewIDNull && len(vid) > 2 && vid[:2] != "__"
+	return id != CIDNil && len(id) > 2 && id[:2] != "__"
 }
