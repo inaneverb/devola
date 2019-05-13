@@ -1,4 +1,4 @@
-// Copyright © 2018. All rights reserved.
+// Copyright Â© 2018. All rights reserved.
 // Author: Alice Qio.
 // Contacts: <qioalice@gmail.com>.
 // License: https://opensource.org/licenses/MIT
@@ -23,29 +23,50 @@
 
 package tgbot
 
-// tErrors is the type of storage of all SDK errors grouped by its classes.
-// More info: Errors.
-type tErrors struct {
+import (
+	"time"
+)
 
-	// Errors that may be occurred while convertng from readable view id
-	// to the internal view id type and vice-versa.
-	// Read more: tViewIDConverter.
-	ViewIDConverter tViewIDConverterErrors
-
-	// Errors that may be occurred while registering event handlers.
-	// Read more: tRegistrator.
-	EventRegistration tRegistratorErrors
+// tSession represents some dialogue between user (Telegram Chat) and
+// server (Telegram Bot).
+//
+// Moreover session allows to represent the dialogue as the "wizard" of
+// some business entity - a step-oriented dialogue, when each next step
+// is edited (or deleted) message about prev step.
+//
+// Session object keeps in itself internal or external information
+// about one continious action using bot.
+//
+// More info: TCtx, tChatInfoManager, tSender, tReceiver.
+type tSession struct {
+	
+	//
+	ID tSessionID `json:"id"`
+	
+	//
+	ViewID tViewID `json:"view_id,omitempty"`
+	
+	//
+	ViewIDEncoded tViewIDEncoded `json:"view_id_encoded"`
+	
+	//
+	SentMessages tChatMessageIDs `json:"sent_messages"`
+	
+	//
+	ExpirationUnixstamp int64 `json:"expiration_unixstamp"`
 }
 
-// Errors is a storage of all SDK errors grouped by SDK classes.
 //
-// All these errors are instances of a special its types, and implements
-// Golang error iface and iError.
-//
-// You can read more about what these errors represents from doc to their
-// storage types (all errors of some type has its type's errors storage).
-// Read these field's types docs.
-var Errors tErrors
+func (s *tSession) isEternal() bool {
+	
+}
 
-// By expr above memory already allocated for tErrors struct and all nested.
-// Errors' fields (nested structs) initialized by its init functions.
+//
+func (s *tSession) isExpiredAt(unixstamp int64) bool {
+	
+}
+
+//
+func (s *tSession) isExpiredNow() bool {
+	return s.isExpiredAt(time.Now().Unix())
+}

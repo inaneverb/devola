@@ -1,4 +1,4 @@
-// Copyright © 2018. All rights reserved.
+// Copyright Â© 2018. All rights reserved.
 // Author: Alice Qio.
 // Contacts: <qioalice@gmail.com>.
 // License: https://opensource.org/licenses/MIT
@@ -23,29 +23,21 @@
 
 package tgbot
 
-// tErrors is the type of storage of all SDK errors grouped by its classes.
-// More info: Errors.
-type tErrors struct {
+import (
+	api "github.com/go-telegram-bot-api/telegram-bot-api"
+	//"github.com/qioalice/i18n"
+)
 
-	// Errors that may be occurred while convertng from readable view id
-	// to the internal view id type and vice-versa.
-	// Read more: tViewIDConverter.
-	ViewIDConverter tViewIDConverterErrors
-
-	// Errors that may be occurred while registering event handlers.
-	// Read more: tRegistrator.
-	EventRegistration tRegistratorErrors
+// todo: Add flag if bot is locked in chat
+type tChatInfo struct {
+	*api.Chat  `json:",inline"`
+	StartedUnixstamp      int64      `json:"started_unixstamp"`
+	LastActivityUnixstamp int64      `json:"last_activity_unixstamp"`
+	//UsedLocale i18n.LocaleName
+	currentSSID           tSessionID `json:"current_ssid"`
 }
 
-// Errors is a storage of all SDK errors grouped by SDK classes.
 //
-// All these errors are instances of a special its types, and implements
-// Golang error iface and iError.
-//
-// You can read more about what these errors represents from doc to their
-// storage types (all errors of some type has its type's errors storage).
-// Read these field's types docs.
-var Errors tErrors
+func (ci *tChatInfo) TrFinish() error {
 
-// By expr above memory already allocated for tErrors struct and all nested.
-// Errors' fields (nested structs) initialized by its init functions.
+}

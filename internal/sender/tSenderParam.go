@@ -23,29 +23,29 @@
 
 package tgbot
 
-// tErrors is the type of storage of all SDK errors grouped by its classes.
-// More info: Errors.
-type tErrors struct {
+// 'tSenderParam' is the aliass to function that applying to the some
+// sender object.
+// It uses as parameters for sender constructor to initialize consts.
+type tSenderParam func(s *tSender)
 
-	// Errors that may be occurred while convertng from readable view id
-	// to the internal view id type and vice-versa.
-	// Read more: tViewIDConverter.
-	ViewIDConverter tViewIDConverterErrors
-
-	// Errors that may be occurred while registering event handlers.
-	// Read more: tRegistrator.
-	EventRegistration tRegistratorErrors
+//
+func SenderAlwaysUseMD() tSenderParam {
+	return func(s *tSender) {
+		s.consts.isAlwaysUseMD, s.consts.isAlwaysUseHTML = true, false
+	}
 }
 
-// Errors is a storage of all SDK errors grouped by SDK classes.
 //
-// All these errors are instances of a special its types, and implements
-// Golang error iface and iError.
-//
-// You can read more about what these errors represents from doc to their
-// storage types (all errors of some type has its type's errors storage).
-// Read these field's types docs.
-var Errors tErrors
+func SenderAlwaysUseHTML() tSenderParam {
+	return func(s *tSender) {
+		s.consts.isAlwaysUseHTML, s.consts.isAlwaysUseMD = true, false
+	}
+}
 
-// By expr above memory already allocated for tErrors struct and all nested.
-// Errors' fields (nested structs) initialized by its init functions.
+//
+func SenderMaxSendAttempts(n int) tSenderParam {
+	if n < -1 || n > 100 {
+		return nil
+	}
+	return func(s *tSender) { s.consts.maxSendRetryAttempts = n }
+}

@@ -23,29 +23,72 @@
 
 package tgbot
 
-// tErrors is the type of storage of all SDK errors grouped by its classes.
-// More info: Errors.
-type tErrors struct {
+import (
+	"reflect"
 
-	// Errors that may be occurred while convertng from readable view id
-	// to the internal view id type and vice-versa.
-	// Read more: tViewIDConverter.
-	ViewIDConverter tViewIDConverterErrors
+	api "github.com/go-telegram-bot-api/telegram-bot-api"
+)
 
-	// Errors that may be occurred while registering event handlers.
-	// Read more: tRegistrator.
-	EventRegistration tRegistratorErrors
+// packageLoggerInit performs initialization of package logger.
+// This function will be called from TBot constructor only if it not be
+// called before and if TBot constructor doesn't receive special logger
+// as argument which he should use as logger.
+//func packageLoggerInit() {
+//	log.Lock()
+//	defer log.Unlock()
+//	if log.Logger != nil {
+//		return
+//	}
+//	// TODO: default logger initialization
+//}
+
+//
+type TBot struct {
+	consts struct {
+		apitoken string
+	}
+
+	endpoint *api.BotAPI
+
+	cim *tChatInfoManager
+
+	converter *tViewIDConverter
+
+	receiver *tReceiver
+
+	sender *tSender
+
+	prof *tProfiler
 }
 
-// Errors is a storage of all SDK errors grouped by SDK classes.
 //
-// All these errors are instances of a special its types, and implements
-// Golang error iface and iError.
-//
-// You can read more about what these errors represents from doc to their
-// storage types (all errors of some type has its type's errors storage).
-// Read these field's types docs.
-var Errors tErrors
+func (b *TBot) ExtendContext(extender interface{}) error {
 
-// By expr above memory already allocated for tErrors struct and all nested.
-// Errors' fields (nested structs) initialized by its init functions.
+	if b == nil {
+		// return ??
+	}
+
+	return b.receiver.ExtendContext(extender)
+}
+
+//
+func (b *TBot) Run() error {
+
+}
+
+//
+func (b *TBot) Stop() error {
+
+}
+
+//
+func (b *TBot) Restart() error {
+
+}
+
+// todo: TBot.LiveStatus method
+
+//
+func New() *TBot {
+	reflect.ValueOf().TryRecv()
+}

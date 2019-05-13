@@ -23,29 +23,21 @@
 
 package tgbot
 
-// tErrors is the type of storage of all SDK errors grouped by its classes.
-// More info: Errors.
-type tErrors struct {
-
-	// Errors that may be occurred while convertng from readable view id
-	// to the internal view id type and vice-versa.
-	// Read more: tViewIDConverter.
-	ViewIDConverter tViewIDConverterErrors
-
-	// Errors that may be occurred while registering event handlers.
-	// Read more: tRegistrator.
-	EventRegistration tRegistratorErrors
+// 'tExecutor' represents some small structure of executors:
+// The callback functions that will be called and context object that will
+// be passed to the callbacks.
+// These objects will created when all checks will be passed, context object
+// will be created, middleware will say that all good and we can proceed,
+// and in that moment executor object will be created and will be passed
+// to the executor's channel.
+// Then one of executor goroutine will take that object and execute it.
+// See methods 'serveUpdates' and 'serveExecutors' for details.
+type tExecutor struct {
+	ctx *TCtx
+	// executors []tHandlerCallback
 }
 
-// Errors is a storage of all SDK errors grouped by SDK classes.
 //
-// All these errors are instances of a special its types, and implements
-// Golang error iface and iError.
-//
-// You can read more about what these errors represents from doc to their
-// storage types (all errors of some type has its type's errors storage).
-// Read these field's types docs.
-var Errors tErrors
+func makeExecutor(ctx *TCtx, handlers []tHandlerCallback) tExecutor {
 
-// By expr above memory already allocated for tErrors struct and all nested.
-// Errors' fields (nested structs) initialized by its init functions.
+}

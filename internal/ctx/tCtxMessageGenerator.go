@@ -1,4 +1,4 @@
-// Copyright © 2018. All rights reserved.
+// Copyright Â© 2018. All rights reserved.
 // Author: Alice Qio.
 // Contacts: <qioalice@gmail.com>.
 // License: https://opensource.org/licenses/MIT
@@ -23,29 +23,35 @@
 
 package tgbot
 
-// tErrors is the type of storage of all SDK errors grouped by its classes.
-// More info: Errors.
-type tErrors struct {
+//
+type tCtxMessageGenerator struct {
+	isUpdateSession bool
+	onSuccess       []FViewSuccessFinisher
+	onError         []FViewErrorFinisher
+	retryAttempts   int8
+	isHTML          bool
+	isMarkdown      bool
+	text            string
+	replyTo         int
 
-	// Errors that may be occurred while convertng from readable view id
-	// to the internal view id type and vice-versa.
-	// Read more: tViewIDConverter.
-	ViewIDConverter tViewIDConverterErrors
-
-	// Errors that may be occurred while registering event handlers.
-	// Read more: tRegistrator.
-	EventRegistration tRegistratorErrors
+	g *tCtxKeyboardGenerator
 }
 
-// Errors is a storage of all SDK errors grouped by SDK classes.
 //
-// All these errors are instances of a special its types, and implements
-// Golang error iface and iError.
-//
-// You can read more about what these errors represents from doc to their
-// storage types (all errors of some type has its type's errors storage).
-// Read these field's types docs.
-var Errors tErrors
+func (gen *tCtxMessageGenerator) genParseMode() string {
+	if ctx.g.isHTML {
+		nmsg.ParseMode = "HTML"
+	}
+	if ctx.g.isMarkdown {
+		nmsg.ParseMode = "Markdown"
+	}
+}
 
-// By expr above memory already allocated for tErrors struct and all nested.
-// Errors' fields (nested structs) initialized by its init functions.
+//
+func (gen *tCtxMessageGenerator) genKb() interface{} {
+	// 	if !ctx.g.isDeleteKeyboard {
+	// 		if ctx.g.keyboard != nil { nmsg.ReplyMarkup = ctx.g.keyboard }
+	// 	} else {
+	// 		nmsg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
+	// 	}
+}
