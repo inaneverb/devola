@@ -9,7 +9,8 @@ import (
 	"../errors"
 )
 
-// todo: comment
+// Predefined error codes of all convert operations.
+// These codes may be returned from IDConverter methods.
 const (
 
 	// No errors.
