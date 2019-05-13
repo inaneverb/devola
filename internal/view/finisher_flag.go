@@ -18,31 +18,31 @@ const (
 	// Panic Guard.
 	// Enabled Panic Guard allows panic in callbacks to be happened without
 	// shutown the whole server - the panic will be recovered.
-	CFinisherFlagEnablePanicGuard finisherFlag = 0x01
+	CEnablePanicGuard finisherFlag = 0x01
 
 	// Finish session transaction.
 	// Enabling this option will trigger the session transaction completion process
 	// after all callbacks has been called.
 	//
 	// More info: Ctx.TrSessionFinish, Session.TrFinish.
-	CFinisherFlagCompleteSessionTransaction finisherFlag = 0x04
+	CFinishSessionTransaction finisherFlag = 0x04
 
 	// Finish chat transaction.
 	// Enabling this option will trigger the chat transaction completion process
 	// after all callbacks has been called.
 	//
 	// More info: Ctx.TrChatFinish, ChatInfo.TrFinish.
-	CFinisherFlagCompleteChatTransaction finisherFlag = 0x08
+	CFinishChatTransaction finisherFlag = 0x08
 
 	// If this bit is set it means that an error occurred while trying to finish
 	// session transaction.
 	// Error object will be stored in Finisher.Err field.
-	CFinisherFlagCompleteSessionTransactionError finisherFlag = 0x10
+	CIsSessionTransactionError finisherFlag = 0x10
 
 	// If this bit is set it means that an error occurred while trying to finish
 	// chat transaction.
 	// Error object will be stored in Finisher.Err field.
-	CFinisherFlagCompleteChatTransactionError finisherFlag = 0x20
+	CIsChatTransactionError finisherFlag = 0x20
 
 	// free HEX values:
 	// 0x02, 0x40, 0x80
