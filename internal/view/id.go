@@ -23,7 +23,7 @@
 
 package tgbot
 
-// tViewID represents a RAW identifier of View.
+// ID represents a RAW identifier of View.
 //
 // This type used only for readable format View ID representation.
 // In internal SDK parts View ID represents by its encoded format using
@@ -31,20 +31,20 @@ package tgbot
 //
 // More info: tViewIDEncoded, tView, tViewIDConverter, tIKBActionEncoded,
 // tCtx, tSender.
-type tViewID string
+type ID string
 
 // Predefined constants.
 const (
 
 	// Represents a nil View ID and an indicator of some error.
-	cViewIDNull tViewID = ""
+	cViewIDNull ID = ""
 )
 
-// isValid returns true only if vid is valid tViewID value.
+// IsValid returns true only if vid is valid ID value.
 //
 // Valid readable View ID must contain more than 2 chars and don't starts
 // from double underscore (reserved for internal parts).
-func (vid tViewID) isValid() bool {
+func (id ID) IsValid() bool {
 
 	return vid != cViewIDNull && len(vid) > 2 && vid[:2] != "__"
 }
