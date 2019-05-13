@@ -5,14 +5,14 @@
 
 package ikba
 
-// EncodedDumpNode is type for method tIKBActionEncoded.dump.
+// EncodedDumpNode is type for method Encoded.dump.
 //
-// This type represents one node of encoded IKB action tIKBActionEncoded.
+// This type represents one node of encoded IKB action Encoded.
 // All fields has JSON tags and it's easy to JSON dump output.
 //
-// Object of this type fills by tIKBActionEncoded.dump method.
+// Object of this type fills by Encoded.dump method.
 //
-// More info: tIKBActionEncoded, tIKBActionEncoded.dump.
+// More info: Encoded, Encoded.dump.
 type EncodedDumpNode struct {
 
 	// Type is a description of IKB encoded node.
