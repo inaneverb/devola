@@ -99,11 +99,11 @@ func (c *chat) setLastUpdated(now int64) *chat {
 	return c
 }
 
-// makeLiresterChat creates a new chat object with passed chat id.
+// makeChat creates a new chat object with passed chat id.
 //
 // NOTE.
 // After creating, specify whether created chat is a chat with user or a group chat
 // using method chat.setType!
-func makeLiresterChat() *chat {
+func makeChat() *chat {
 	return &chat{}
 }
