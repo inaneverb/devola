@@ -25,23 +25,23 @@ type IDEnc uint32
 const (
 
 	// Represents a nil encoded View ID and an indicator of some error.
-	CIDEncodedNil IDEnc = 0
+	CIDEncNil IDEnc = 0
 
 	// All encoded identifiers as numbers will be more than or equal to that value.
 	// All less values are reserved for internal needs.
-	CIDEncodedStartValue IDEnc = 100
+	CIDEncStartValue IDEnc = 100
 
 	// All encoded identifiers as numbers will be less than that value.
 	// All more than or equal to that values are reserver for internal needs.
-	CIDEncodedMaxValue IDEnc = math.MaxUint32 - 1
+	CIDEncMaxValue IDEnc = math.MaxUint32 - 1
 )
 
 // IsValid returns true only if vide is valie IDEnc value.
 //
-// Valid encoded View ID must not be equal to the CIDEncodedNil
+// Valid encoded View ID must not be equal to the CIDEncNil
 // and be in range [CIDEncodedStartValue, CIDEncodedMaxValue).
 func (idenc IDEnc) IsValid() bool {
 
-	return idenc != CIDEncodedNil &&
-		idenc >= CIDEncodedStartValue && idenc < CIDEncodedMaxValue
+	return idenc != CIDEncNil &&
+		idenc >= CIDEncStartValue && idenc < CIDEncMaxValue
 }
