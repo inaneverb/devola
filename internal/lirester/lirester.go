@@ -98,9 +98,6 @@ type Lirester struct {
 	// Otherwise the behaviour is undefined.
 	consts struct {
 
-		// todo: rename userChatN, userChatT as its consts
-		// todo: rename groupChatN, groupChatT as its consts
-
 		// Main loop ticker delay.
 		// T / N of 1st Telegram restriction.
 		// More info: Lirester "How it works" section, p.1.
@@ -228,7 +225,7 @@ func (l *Lirester) Cleanup(now int64) {
 
 	// Perform restart if it was requested.
 	//
-	// Check nil, not a zero len, because zero len params means that
+	// Check nil (not a zero len), because zero len params means that
 	// restart should be but without changing a parameters.
 	if len(l.restartRequestedWith) != 0 {
 		l.restart()
@@ -380,13 +377,13 @@ func (l *Lirester) cleanupDestroyChats(now int64) {
 // by params passed to the Lirester.RequestRestartWith, restarts main loop ticker.
 func (l *Lirester) restart() {
 
-	// todo: Add recreate cleanup rules queue.
+	// TODO: Recreate cleanup rules queue (but APPLY all already accumulated).
+	// close(l.chCleanup)
 
 	// Stop main loop ticker, discard cleanup rules queue.
 	// restart performs in the end of Lirester.Cleanup, what means that
 	// some cleanup rules already applied.
 	l.MainLoop.Stop()
-	// close(l.chCleanup)
 
 	// The rest cleanup rules (which were discard) will be emulated
 	// by force zeroing rest of counters.
@@ -411,18 +408,21 @@ func (l *Lirester) restart() {
 	l.restartRequestedWith = nil
 }
 
-//
+// applyParams applies each param from params slice to the current Lirester.
+// It overwrites alreay applied parameters.
 func (l *Lirester) applyParams(params []Param) {
 
+	// TODO: Maybe something should to be here?
+
+	for _, param := range params {
+		if param != nil {
+			param(l)
+		}
+	}
 }
 
 // MakeLirester creates a new Lirester object, the passed params will be applied to.
 // Also starts main Lirester loop (MainLoop field).
-//
-// Parameters:
-//
-// Only tLiresterParam type of arguments is allowed.
-// Values of any other type will be ignored.
 func MakeLirester(params ...Param) *Lirester {
 
 	var l Lirester
@@ -436,12 +436,7 @@ func MakeLirester(params ...Param) *Lirester {
 	l.consts.groupChatN = cGroupChatN
 	l.consts.groupChatT = cGroupChatT
 
-	// Apply passed lirester params.
-	for _, param := range params {
-		if param != nil {
-			param(&l)
-		}
-	}
+	l.applyParams(params)
 
 	// Allocate mem for main core lirester and cleanup queue (chan).
 	l.core = make(map[chat.ID]*lirchat)
