@@ -27,7 +27,7 @@ type lirchat struct {
 // howMuch returns the value of how many messages already sent to the chat.
 func (c *lirchat) howMuch() uint8 {
 	// High bit is indicator of group chat - ignore it
-	return uint8(c.data) & 0x7F
+	return c.data & 0x7F
 }
 
 // setHowMuch sets the counter to the v value in the current chat and
@@ -39,8 +39,8 @@ func (c *lirchat) howMuch() uint8 {
 //
 // Deprecated: Unneccessary
 func (c *lirchat) setHowMuch(v uint8) *lirchat {
-	uint8(c.data) &= 0x80
-	uint8(c.data) |= v & 0x7F
+	c.data &= 0x80
+	c.data |= v & 0x7F
 	return c
 }
 
@@ -57,9 +57,9 @@ func (c *lirchat) setHowMuch(v uint8) *lirchat {
 // Otherwise, there is no-op.
 func (c *lirchat) incHowMuch(delta uint8) *lirchat {
 
-	var nv = (uint8(c.data) & 0x7F) + delta
+	var nv = (c.data & 0x7F) + delta
 	if nv&0x80 == 0 {
-		uint8(c.data) = (uint8(c.data) & 0x80) | nv
+		c.data = c.data & 0x80 | nv
 	}
 
 	return c
@@ -77,7 +77,7 @@ func (c *lirchat) decHowMuch(delta uint8) *lirchat {
 // isUser returns true only if the current chat is a chat with user.
 func (c *lirchat) isUser() bool {
 	// Zero high bit means that the current chan is just a chat with user.
-	return uint8(c.data)&0x80 == 0
+	return c.data & 0x80 == 0
 }
 
 // isGroup returns true only if the current chat is a group/supergroup
@@ -89,10 +89,10 @@ func (c *lirchat) isGroup() bool {
 // setType changes type of chat (with a user or a group) by isUser flag
 // in the current chat object.
 func (c *lirchat) setType(isUser bool) *lirchat {
-	uint8(c.data) &= 0x7F // cleanup prev value of flag
+	c.data &= 0x7F // cleanup prev value of flag
 	// if it's not user, set high bit
 	if !isUser {
-		uint8(c.data) |= 0x80
+		c.data |= 0x80
 	}
 	return c
 }
@@ -109,5 +109,5 @@ func (c *lirchat) setLastUpdated(now int64) *lirchat {
 // After creating, specify whether created chat is a chat with user or a group chat
 // using method chat.setType!
 func makeChat() *lirchat {
-	return &chat{}
+	return &lirchat{}
 }
