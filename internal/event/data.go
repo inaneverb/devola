@@ -25,5 +25,5 @@ type Data string
 const (
 
 	// A marker of invalid data.
-	cDataNil Data = ""
+	CDataNil Data = ""
 )
