@@ -40,19 +40,19 @@ type IDConverter struct {
 func (idc *IDConverter) Encode(id ID) (IDEnc, errors.Code) {
 
 	if !id.IsValid() {
-		return CIDEncNil, EInvalidID
+		return CIDEncNil, ECInvalidID
 	}
 
 	idenc, found := idc.mEncodeStorage[id]
 	if !found {
-		return CIDEncNil, ENotRegistered
+		return CIDEncNil, ECNotRegistered
 	}
 
 	if !idenc.IsValid() {
-		return CIDEncNil, EInvalidIDEnc
+		return CIDEncNil, ECInvalidIDEnc
 	}
 
-	return idenc, EOK
+	return idenc, errors.ECOK
 }
 
 // Decode tries to decode passed encoded View ID.
@@ -64,19 +64,19 @@ func (idc *IDConverter) Encode(id ID) (IDEnc, errors.Code) {
 func (idc *IDConverter) Decode(idenc IDEnc) (ID, errors.Code) {
 
 	if !idenc.IsValid() {
-		return CIDNil, EInvalidIDEnc
+		return CIDNil, ECInvalidIDEnc
 	}
 
 	id, found := idc.mDecodeStorage[idenc]
 	if !found {
-		return CIDNil, ENotRegistered
+		return CIDNil, ECNotRegistered
 	}
 
 	if !id.IsValid() {
-		return CIDNil, EInvalidID
+		return CIDNil, ECInvalidID
 	}
 
-	return id, EOK
+	return id, errors.ECOK
 }
 
 // Register tries to register View ID (with encoding it).
@@ -88,22 +88,22 @@ func (idc *IDConverter) Decode(idenc IDEnc) (ID, errors.Code) {
 func (idc *IDConverter) Register(id ID) (IDEnc, errors.Code) {
 
 	if !id.IsValid() {
-		return CIDEncNil, EInvalidID
+		return CIDEncNil, ECInvalidID
 	}
 
 	if _, found := idc.mEncodeStorage[id]; found {
-		return CIDEncNil, EAlreadyRegistered
+		return CIDEncNil, ECAlreadyRegistered
 	}
 
 	if !idc.encodedIDGenerator.IsValid() {
-		return CIDEncNil, ELimitReached
+		return CIDEncNil, ECLimitReached
 	}
 
 	idc.encodedIDGenerator++
 	idc.mEncodeStorage[id] = idc.encodedIDGenerator
 	idc.mDecodeStorage[idc.encodedIDGenerator] = id
 
-	return idc.encodedIDGenerator, EOK
+	return idc.encodedIDGenerator, errors.ECOK
 }
 
 // MakeIDConverter is the IDConverter constructor.
