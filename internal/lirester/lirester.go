@@ -135,7 +135,11 @@ type Lirester struct {
 	// Cleanup rules queue.
 	chCleanup chan cleanupConfig
 
-	restartRequestedWith []Param
+	// Arguments of restart method.
+	// Nil means restart isn't requested,
+	// Empty slice means restart requested but w/o changing params
+	// Otherwise represents a params with which lirester will be restarted.
+	restartRequestedWith []interface{}
 }
 
 // Predefined default values of some important Lirester constants.
@@ -249,10 +253,10 @@ func (l *Lirester) LastUpdated(chatID chat.ID) int64 {
 // Generally, restart will be done after next cleanup operation.
 // If no one param will be passed, restart will be, but without changing
 // the parameters.
-func (l *Lirester) RequestRestartWith(params ...Param) {
+func (l *Lirester) RequestRestartWith(params []interface{}) {
 
 	if len(params) == 0 {
-		params = make([]Param, 0, 0)
+		params = make([]interface{}, 0, 0)
 	}
 
 	l.restartRequestedWith = params
@@ -410,20 +414,25 @@ func (l *Lirester) restart() {
 
 // applyParams applies each param from params slice to the current Lirester.
 // It overwrites alreay applied parameters.
-func (l *Lirester) applyParams(params []Param) {
-
-	// TODO: Maybe something should to be here?
+func (l *Lirester) applyParams(params []interface{}) {
+	// TODO: Maybe something more must be here?
 
 	for _, param := range params {
-		if param != nil {
-			param(l)
+
+		if typedParam, ok := param.(Param); ok && typedParam != nil {
+			typedParam(l)
+
+		} else if paramGen, ok := param.(func() Param); ok && paramGen != nil {
+			if typedParam := paramGen(); typedParam != nil {
+				typedParam(l)
+			}
 		}
 	}
 }
 
 // MakeLirester creates a new Lirester object, the passed params will be applied to.
 // Also starts main Lirester loop (MainLoop field).
-func MakeLirester(params ...Param) *Lirester {
+func MakeLirester(params []interface{}) *Lirester {
 
 	var l Lirester
 
@@ -446,33 +455,4 @@ func MakeLirester(params ...Param) *Lirester {
 	l.MainLoop = time.NewTicker(l.consts.mainLoopDelay)
 
 	return &l
-}
-
-// destroyLirester stops a Lirester background cleanup, stops a Lirester's
-// main loop ticker, closes cleanup queue (chan), and nulls the variable in which
-// pointer to the that Lirester object is store.
-//
-// NOTE!
-// Lirester object must be passed by double pointer for avoiding
-// next Lirester object using in the callable code after calling this function.
-//
-// WARNING!
-// Lirester object can't be used after calling this function!
-// DO NOT TRY TO BREAK THIS RULE!
-// OTHERWISE PANIC GUARANTEED!
-func destroyLirester(l **Lirester) {
-
-	// todo: What is this function for? Remove.
-
-	if l == nil || *l == nil {
-		return
-	}
-
-	_l := *l
-	*l = nil
-
-	_l.MainLoop.Stop()          // stop main loop
-	time.Sleep(1 * time.Second) // wait background cleanup
-	close(_l.chCleanup)         // close cleanup rule's chan
-	_l.chCleanup, _l.MainLoop, _l.core = nil, nil, nil
 }
