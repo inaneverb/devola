@@ -143,8 +143,6 @@ type Lirester struct {
 }
 
 // Predefined default values of some important Lirester constants.
-// These values used while constructing Lirester object, can be overwritten
-// using tLiresterParam parameters or Lirester.RestartWith method.
 const (
 
 	// Default main loop Lirester ticker delay.
