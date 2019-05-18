@@ -229,13 +229,6 @@ func (ch *chatchan) next(i int16) int16 {
 
 // growIfFull resizes up if the buffer is full.
 func (ch *chatchan) growIfFull() {
-	if len(ch.buf) == 0 {
-		if ch.minCap == 0 {
-			ch.minCap = cChChMinCapacity
-		}
-		ch.buf = make([]*ToSend, ch.minCap)
-		return
-	}
 	if ch.count == int16(len(ch.buf)) {
 		ch.resize()
 	}
@@ -263,4 +256,25 @@ func (ch *chatchan) resize() {
 	ch.head = 0
 	ch.tail = ch.count
 	ch.buf = newBuf
+}
+
+// makeChatchan creates a new chatchan object with passed capacity value.
+// If passed capacity < cChChMinCapacity (16 by default), it will be overwritten
+// by that value.
+func makeChatchan(cap int16) *chatchan {
+	ch := new(chatchan)
+
+	// don't need this check because of:
+	// only Sender.consts.chchCap used as cap arg for this constructor
+	// => Sender.consts.chchCap default value is cChChMinCapacity (sender.go:384),
+	// => Sender.consts.chchCap changes only from Params.SetEXREOF and that param
+	// has this check (params.go:93:95).
+	// if cap < cChChMinCapacity {
+	// 	cap = cChChMinCapacity
+	// }
+
+	ch.minCap = cap
+	ch.buf = make([]*ToSend, ch.minCap)
+
+	return ch
 }
