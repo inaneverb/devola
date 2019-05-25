@@ -1,0 +1,3 @@
+[submodule "backends/telegram/api"]
+	path = backends/telegram/api
+	url = https://github.com/qioalice/Devola-BackendAPI-Telegram
