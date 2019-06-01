@@ -21,6 +21,14 @@ type Event struct {
 	Data Data `json:"data,omitempty"`
 }
 
+// String returns a string representation of event.
+func (e *Event) String() string {
+	if e == nil {
+		return ""
+	}
+	return "Type: " + e.Type.String() + ", Data: \"" + string(e.Data) + "\""
+}
+
 // MakeEvent creates a new Event object with passed event type and event data.
 func MakeEvent(typ Type, data Data) *Event {
 	return &Event{
