@@ -6,6 +6,9 @@
 package registrator
 
 import (
+	"strings"
+	"unsafe"
+
 	"github.com/qioalice/devola/core/event"
 	"github.com/qioalice/devola/core/view"
 )
@@ -24,6 +27,24 @@ type rule struct {
 	// the registering event will be handled ONLY WHEN current session's View ID
 	// is the same as any View ID from this field.
 	When []view.ID `json:"when,omitempty"`
+}
+
+// String returns a string representation of rule.
+func (r *rule) String() string {
+
+	if r == nil {
+		return ""
+	}
+
+	s := r.Event.String()
+
+	// Encode when if it's not empty.
+	if len(r.When) != 0 {
+		ss := *(*[]string)(unsafe.Pointer(&r.When))
+		s += ", " + strings.Join(ss, ", ")
+	}
+
+	return s
 }
 
 // makeRule creates a new rule object, that directly calls event.Event's

@@ -6,6 +6,8 @@
 package registrator
 
 import (
+	"strings"
+
 	"github.com/qioalice/devola/core/errors"
 )
 
@@ -86,12 +88,40 @@ func (e *EBadCallback) IsIt(e2 error) bool {
 		e2t != nil && e != nil && e.IsMiddleware == e2t.IsMiddleware)
 }
 
+// Error returns a string representation of error in the following format:
+// "<e.What()> Want type: <T1>, Have type: <T2>. Covered rules: <R>",
+// where T1 - desired type, T2 - current type, R - rules to which that
+// error is related.
 //
+// Returns an empty string if e is nil.
 func (e *EBadCallback) Error() string {
 
+	// TODO: Optimize algo, refuse to use strings algorithms, use once allocated []byte
+
+	if e == nil {
+		return ""
+	}
+
+	s := e.What()
+	s += " Want type: " + e.WantType + ", Have type: " + e.HaveType + ". "
+
+	if len(e.AppliedTo) != 0 {
+		rs := make([]string, 0, len(e.AppliedTo))
+		for _, rule := range e.AppliedTo {
+			rs = append(rs, rule.String())
+		}
+		s += "Covered rules: " + strings.Join(rs, ", ")
+	}
+
+	return s
 }
 
+// String returns a string representation of error in the following format:
+// "<e.What()> Want type: <T1>, Have type: <T2>. Covered rules: <R>",
+// where T1 - desired type, T2 - current type, R - rules to which that
+// error is related.
 //
+// Returns an empty string if e is nil.
 func (e *EBadCallback) String() string {
-
+	return e.Error()
 }
