@@ -42,7 +42,7 @@ func (t Type) String() string {
 		return "Invalid type"
 	}
 
-	return strings.Join(types, ",")
+	return strings.Join(types, ", ")
 }
 
 // typeAliases is a map that allows to set comments to each type by TypeComment func
