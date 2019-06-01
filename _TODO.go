@@ -40,4 +40,14 @@ package tgbot
 
 // all errors should be an object and moved to separate package
 
-// rework error mechanism
+// [DONE] rework error mechanism
+// - make EOK global (in errors package)
+
+// - use interface{} as params in all public constructors
+// because parameter functions can be func(<args>) Param or func() Param.
+// In second way that generator can be passed directly to the constructor
+// and constructor can apply it by itself.
+
+// unite sender.ToSend and view.Finisher (they represents 75% the same data)
+
+// https://preview.tabler.io/index.html
