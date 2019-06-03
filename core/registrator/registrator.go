@@ -1,25 +1,7 @@
-// Copyright © 2018. All rights reserved.
+// Copyright © 2019. All rights reserved.
 // Author: Alice Qio.
 // Contacts: <qioalice@gmail.com>.
 // License: https://opensource.org/licenses/MIT
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"),
-// to deal in the Software without restriction, including without limitation
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,
-// and/or sell copies of the Software, and to permit persons to whom
-// the Software is furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-// IN THE SOFTWARE.
 
 package registrator
 
@@ -27,276 +9,159 @@ import (
 	"reflect"
 	"unsafe"
 
-	"github.com/qioalice/gext/dangerous"
-
-	"github.com/qioalice/devola/core/errors"
 	"github.com/qioalice/devola/core/event"
+	"github.com/qioalice/devola/core/sys"
 	"github.com/qioalice/devola/core/view"
 )
 
-// Registrator is a part of tReceiver type.
-// TODO: comment what is it and how it works
-// TODO: comment why *[]FViewHandler instead []FViewHandler, etc
-// TODO: comment why unsafe.Pointer as *[]FViewHandler, *[]FViewMiddlewre, *[]unsafe.Pointer
+// Registrator is a special part of Devola project that provides registering,
+// storing, keeping, extracting, matching, finding and processing of all
+// handlers and middlewares.
+//
+// You should use Simple or Complex method to accumulate rules to which
+// some next callback should be applied and then call Handler or Middleware method
+// to flush it.
+// You can also use MainHandler or MainMiddleware methods to set up general,
+// regular callbacks.
+//
+// But! You must pass callback with compatible type with your context type!
+// If your context type has been changed, use RegenerateRequiredTypes method
+// to updated restriction rules.
 type Registrator struct {
 
-	// Link to View ID converter (used in Registrator.saveAccumulated).
-	converter *view.IDConverter
+	// Link to View ID converter (used in Registrator.save method).
+	converter *view.IDConv
+
+	// There is 3 important entity using which you can get or store any callback:
+	// event type (event.Type), event data (event.Data) and view ID encoded (view.IDEnc),
+	// where
+	// event type is the type of occurred event,
+	// event data is the body of occurred event,
+	// view ID encoded is the current View ID in the session associated with occurred event.
+	//
+	// By default you should determine all these 3 things for each callback
+	// at the registering operation and then use them to get registered callback.
+	//
+	// But it is possible that you don't use sessions (and you don't have View ID)
+	// for example, or it's meaningless to determine events by its data
+	// because it is empty or too complex and different (for example if it is
+	// text message and text message can be absolutely any), or you want to
+	// register or get the callback that will be called for all untyped events, etc.
+	//
+	// Because of that there is 5 sections of storage.
 
 	// [ 1 SECTION ]
 	// handlers, middlewares storage:
-	// occurred event type -> current View ID -> occurred event data,
-	// except text events (handlerTextWhen field).
-	handlersWhen       map[event.Type]map[view.IDEnc]map[event.Data]unsafe.Pointer // T of 3rd map's value is *[]FViewHandler
-	handlersWhenExt    map[event.Type]map[view.IDEnc]map[event.Data]unsafe.Pointer // T of 3rd map's value is *[]unsafe.Pointer
-	middlewaresWhen    map[event.Type]map[view.IDEnc]map[event.Data]unsafe.Pointer // T of 3rd map's value is *[]FViewMiddleware
-	middlewaresWhenExt map[event.Type]map[view.IDEnc]map[event.Data]unsafe.Pointer // T of 3rd map's value is *[]unsafe.Pointer
+	// occurred event type -> current View ID -> occurred event data.
+	handlersWhen    map[event.Type]map[view.IDEnc]map[event.Data][]unsafe.Pointer
+	middlewaresWhen map[event.Type]map[view.IDEnc]map[event.Data][]unsafe.Pointer
 
 	// [ 2 SECTION ]
 	// handlers, middlewares storage:
-	// occurred event type -> occurred event data,
-	// except text events (handlerTextJust field).
-	handlersJust       map[event.Type]map[event.Data]unsafe.Pointer // T of 2nd map's value is *[]FViewHandler
-	handlersJustExt    map[event.Type]map[event.Data]unsafe.Pointer // T of 2nd map's value is *[]unsafe.Pointer
-	middlewaresJust    map[event.Type]map[event.Data]unsafe.Pointer // T of 2nd map's value is *[]FViewMiddleware
-	middlewaresJustExt map[event.Type]map[event.Data]unsafe.Pointer // T of 2nd map's value is *[]unsafe.Pointer
+	// occurred event type -> occurred event data.
+	handlersJust    map[event.Type]map[event.Data][]unsafe.Pointer
+	middlewaresJust map[event.Type]map[event.Data][]unsafe.Pointer
 
 	// [ 3 SECTION ]
 	// main handlers, middlewares storage.
-	handlersMain       unsafe.Pointer // T is *[]FViewHandler
-	handlersMainExt    unsafe.Pointer // T is *[]unsafe.Pointer
-	middlewaresMain    unsafe.Pointer // T is *[]FViewMiddleware
-	middlewaresMainExt unsafe.Pointer // T is *[]unsafe.Pointer
+	handlersMain    []unsafe.Pointer // T is *[]FViewHandler
+	middlewaresMain []unsafe.Pointer // T is *[]FViewMiddleware
 
 	// [ 4 SECTION ]
-	// text handlers, middlewares storage by current View ID.
-	handlerTextWhen        map[view.IDEnc]unsafe.Pointer // T of value is *[]FViewHandler
-	handlerTextWhenExt     map[view.IDEnc]unsafe.Pointer // T of value is *[]unsafe.Pointer
-	middlewaresTextWhen    map[view.IDEnc]unsafe.Pointer // T of value is *[]FViewMiddleware
-	middlewaresTextWhenExt map[view.IDEnc]unsafe.Pointer // T of value is *[]unsafe.Pointer
+	// occurred event type -> current View ID.
+	handlerTextWhen     map[event.Type]map[view.IDEnc][]unsafe.Pointer
+	middlewaresTextWhen map[event.Type]map[view.IDEnc][]unsafe.Pointer
 
 	// [ 5 SECTION ]
-	// text handlers, middlewares.
-	handlerTextJust        unsafe.Pointer // T is *[]FViewHandler
-	handlerTextJustExt     unsafe.Pointer // T is *[]unsafe.Pointer
-	middlewaresTextJust    unsafe.Pointer // T is *[]FViewMiddleware
-	middlewaresTextJustExt unsafe.Pointer // T is *[]unsafe.Pointer
+	// occurred event type.
+	handlerTextJust     map[event.Type][]unsafe.Pointer
+	middlewaresTextJust map[event.Type][]unsafe.Pointer
 
-	// REGISTERING NEW EVENTS
+	// Generated type the registered handlers must have.
+	handlerTypeRequired reflect.Type
 
-	// todo: comment
-	tCtxExtended reflect.Type
+	// Generated type the registered middlewares must have.
+	middlewareTypeRequired reflect.Type
 
-	// todo: comment
-	tHandlerCtxExtended reflect.Type
+	// The set of rules to which next generated callback (handler or middleware)
+	// will be applied.
+	// Is accumulated by Simple or Complex, is flushed by Handler or Middleware.
+	accumulatedRules []rule
 
-	// todo: comment
-	tMiddlewareCtxExtended reflect.Type
-
-	// todo: comment
-	currentRules []rule
-
-	// todo: comment
-	regErrors []errors.Error
+	// The function that determines what event type can be considered "simple"
+	// and what can not.
+	// "Simple" is the type of event that will be handled by callbacks from
+	// 4 or 5 sections - independent by event data.
+	simplesChecker func(typ event.Type) (isSimple bool)
 }
 
 // Text marks that the callback passed into the next Handler or Middleware
 // methods will be called when text event will be occurred.
-func (r *Registrator) Text(when []string) *Registrator {
-	if r != nil {
-		event := makeRule(event.CTypeText, event.CDataNil, whcv(when))
-		r.currentRules = append(r.currentRules, *event)
-	}
-	return r
-}
-
-// Button marks that the callback passed into the next Handler or Middleware
-// methods will be called when keyboard button event will be occurred and
-// pressed button will be the same as what argument.
-func (r *Registrator) Button(what string, when []string) *Registrator {
-	if r != nil && what != "" {
-		event := makeRule(event.CTypeKeyboardButton, event.Data(what), whcv(when))
-		r.currentRules = append(r.currentRules, *event)
-	}
-	return r
-}
-
-// Buttons marks that the callback passed into the next Handler or Middleware
-// methods will be called when keyboard button event will be occurred and
-// pressed button will be the same as any from whats argument.
-func (r *Registrator) Buttons(whats []string, when []string) *Registrator {
-	for _, what := range whats {
-		r = r.Button(what, when)
-	}
-	return r
+func (r *Registrator) Simple(typ event.Type, when []string) *Registrator {
+	return r.Complex(typ, string(event.CDataNil), when)
 }
 
 // InlineButton marks that the callback passed into the next Handler or Middleware
 // methods will be called when inline keyboard button event will be occurred and
 // pressed inline button will be the same as what argument.
-func (r *Registrator) InlineButton(what string, when []string) *Registrator {
-	if r != nil && what != "" {
-		event := makeRule(event.CTypeInlineKeyboardButton, event.Data(what), whcv(when))
-		r.currentRules = append(r.currentRules, *event)
-	}
+func (r *Registrator) Complex(typ event.Type, what string, when []string) *Registrator {
+	// *(*[]view.ID)(unsafe.Pointer(&when)) is
+	// []string -> []view.ID conversion without memory reallocation
+	e := makeRule(typ, event.Data(what), *(*[]view.ID)(unsafe.Pointer(&when)))
+	r.accumulatedRules = append(r.accumulatedRules, *e)
 	return r
 }
 
-// InlineButtons marks that the callback passed into the next Handler or Middleware
-// methods will be called when inline keyboard button event will be occurred and
-// pressed inline button will be the same as any from whats argument.
-func (r *Registrator) InlineButtons(whats []string, when []string) *Registrator {
-	for _, what := range whats {
-		r = r.InlineButton(what, when)
-	}
-	return r
-}
-
-// Command marks that the callback passed into the next Handler or Middleware
-// methods will be called when command event will be occurred and
-// requested command will be the same as what argument.
-func (r *Registrator) Command(what string, when []string) *Registrator {
-	if what != "" && (what[0] == '/' || what[0] == '\\') {
-		what = what[1:]
-	}
-	if r != nil && what != "" {
-		event := makeRule(event.CTypeCommand, event.Data(what), whcv(when))
-		r.currentRules = append(r.currentRules, *event)
-	}
-	return r
-}
-
-// Commands marks that the callback passed into the next Handler or Middleware
-// methods will be called when command event will be occurred and
-// requested command will be the same as any from whats argument.
-func (r *Registrator) Commands(whats []string, when []string) *Registrator {
-	for _, what := range whats {
-		r = r.Command(what, when)
-	}
-	return r
-}
-
-// Handler links all accumulated events by Text, Button, InlineButton, Command
-// methods with passed handler (and then list of all accumulated events will be cleared).
+// Handler links all accumulated events by Simple or Complex methods
+// with passed handler (and then list of all accumulated events will be cleared).
 //
 // If there are no accumulated events, the handler will be registered as
 // main handler (handles all events).
 //
-// handler should be FViewHandler type or the same type as your context extender
-// returns, if you extends the context.
+// handler type should be "func(*T)" where T is the same type as backend Ctx
+// or the same as your context extender returns, if you extends the context.
+// Otherwise a not nil EBadCallback error object is returned.
 //
 // ATTENTION!
 // If any error will occur while trying to register handler,
-// list of all accumulated events won't be cleared!
-func (r *Registrator) Handler(handler interface{}) *Registrator {
-
-	if r == nil {
-		return nil
-	}
-
-	var err *tRegistratorError
-
-	switch {
-	case handler == nil:
-		err = Errors.EventRegistration.NilHandler.cp()
-		err = err.tw(reflect.TypeOf(FViewHandler(nil)).String())
-
-	case !r.parent.isCtxExtended:
-		if typedHandler, ok := handler.(FViewHandler); ok {
-			if typedHandler != nil {
-				err = r.saveWhenDefaultCtx(typedHandler, nil)
-			} else {
-				err = Errors.EventRegistration.NilHandler.cp()
-				err = err.tw(reflect.TypeOf(FViewHandler(nil)).String())
-			}
-		} else {
-			err = Errors.EventRegistration.IncompatibleContextType.cp()
-			err = err.th(reflect.TypeOf(handler).String())
-			err = err.tw(reflect.TypeOf(FViewHandler(nil)).String())
-		}
-
-	case r.parent.isCtxExtended:
-		err = r.saveWhenExtendedCtx(handler, false)
-	}
-
-	if err != nil {
-		r.regErrors = append(r.regErrors, *err.e(r.currentRules))
-	}
-
-	return r
+// list of all accumulated events will not be cleared!
+func (r *Registrator) Handler(handler interface{}) *EBadCallback {
+	return r.save(handler, false, r.handlerTypeRequired)
 }
 
-// Middleware links all accumulated events by Text, Button, InlineButton, Command
-// methods with passed middleware (and then list of all accumulated events will be cleared).
+// Middleware links all accumulated events by Simple or Complex methods
+// with passed middleware (and then list of all accumulated events will be cleared).
 //
 // If there are no accumulated events, the middleware will be registered as
 // main middleware (checks all events).
 //
-// middleware should be FViewMiddleware type or the same type as your context extender
-// returns, if you extends the context.
+// middleware type should be "func(*T) bool" where T is the same type as backend Ctx
+// or the same as your context extender returns, if you extends the context.
+// Otherwise a not nil EBadCallback error object is returned.
 //
 // ATTENTION!
 // If any error will occur while trying to register middleware,
-// list of all accumulated events won't be cleared!
-func (r *Registrator) Middleware(middleware interface{}) *Registrator {
-
-	if r == nil {
-		return nil
-	}
-
-	var err *tRegistratorError
-
-	switch {
-	case middleware == nil:
-		err = Errors.EventRegistration.NilMiddleware.cp()
-		err = err.tw(reflect.TypeOf(FViewMiddleware(nil)).String())
-
-	case !r.parent.isCtxExtended:
-		if typedMiddleware, ok := middleware.(FViewMiddleware); ok {
-			if typedMiddleware != nil {
-				err = r.saveWhenDefaultCtx(nil, typedMiddleware)
-			} else {
-				err = Errors.EventRegistration.NilMiddleware.cp()
-				err = err.tw(reflect.TypeOf(FViewMiddleware(nil)).String())
-			}
-		} else {
-			err = Errors.EventRegistration.IncompatibleContextType.cp()
-			err = err.th(reflect.TypeOf(middleware).String())
-			err = err.tw(reflect.TypeOf(FViewMiddleware(nil)).String())
-		}
-
-	case r.parent.isCtxExtended:
-		err = r.saveWhenExtendedCtx(middleware, true)
-	}
-
-	if err != nil {
-		r.regErrors = append(r.regErrors, *err.e(r.currentRules))
-	}
-
-	// if r != nil, Registrator is private type and it guarantees,
-	// that parent != nil and parent.parent also.
-	return r.parent.parent
+// list of all accumulated events will not be cleared!
+func (r *Registrator) Middleware(middleware interface{}) *EBadCallback {
+	return r.save(middleware, true, r.middlewareTypeRequired)
 }
 
 // MainHandler register handler as main handler (handles all events).
 // You could just use Handler method instead with no accumulated events,
 // but using this method improves code readability.
 //
-// handler should be FViewHandler type or the same type as your context extender
-// returns, if you extends the context.
-func (r *Registrator) MainHandler(handler interface{}) *Registrator {
+// handler type should be "func(*T)" where T is the same type as backend Ctx
+// or the same as your context extender returns, if you extends the context.
+// Otherwise a not nil EBadCallback error object is returned.
+func (r *Registrator) MainHandler(handler interface{}) *EBadCallback {
 
-	if r == nil {
-		return nil
-	}
-
-	// Handler will be registered as main handler only when currentRules
+	// Handler will be registered as main handler only when accumulatedRules
 	// field is empty.
 
-	currentRules := r.currentRules
-	r.currentRules = nil
+	currentRules := r.accumulatedRules
+	r.accumulatedRules = nil
 	returned := r.Handler(handler)
-	r.currentRules = currentRules
+	r.accumulatedRules = currentRules
 	return returned
 }
 
@@ -304,213 +169,84 @@ func (r *Registrator) MainHandler(handler interface{}) *Registrator {
 // You could just use Middleware method instead with no accumulated events,
 // but using this method improves code readability.
 //
-// middleware should be FViewMiddleware type or the same type as your context extender
-// returns, if you extends the context.
-func (r *Registrator) MainMiddleware(middleware interface{}) *Registrator {
+// middleware type should be "func(*T) bool" where T is the same type as backend Ctx
+// or the same as your context extender returns, if you extends the context.
+// Otherwise a not nil EBadCallback error object is returned.
+func (r *Registrator) MainMiddleware(middleware interface{}) *EBadCallback {
 
-	if r == nil {
-		return nil
-	}
-
-	// Middleware will be registered as main middleware only when currentRules
+	// Middleware will be registered as main middleware only when accumulatedRules
 	// field is empty.
 
-	currentRules := r.currentRules
-	r.currentRules = nil
+	currentRules := r.accumulatedRules
+	r.accumulatedRules = nil
 	returned := r.Middleware(middleware)
-	r.currentRules = currentRules
+	r.accumulatedRules = currentRules
 	return returned
 }
 
-// saveWhenDefaultCtx performs linking all accumulated events with passed
-// default view handler h and default view middleware m
-// (one of them can be nil, but not both at the same time).
-func (r *Registrator) saveWhenDefaultCtx(h FViewHandler, m FViewMiddleware) *tRegistratorError {
+// RegenerateRequiredTypes updates handlerTypeRequired and middlewareTypeRequired
+// fields by new generated types that will be depended from ctxType.
+// It allows to register handler or middlewares with a new signature
+// after context has been extended.
+func (r *Registrator) RegenerateRequiredTypes(ctxType reflect.Type) {
 
-	// At this code point h or m is valid (not nil) callback.
+	// It excepts ctxType is not nil
 
-	switch {
-	case h != nil:
-		cbptr = unsafe.Pointer(&h)
-	case m != nil:
-		cbptr = unsafe.Pointer(&m)
-	}
+	inBoth := []reflect.Type{ctxType}
+	outMiddleware := []reflect.Type{reflect.TypeOf(true)}
 
-	return r.saveAccumulated(cbptr, m != nil, false)
+	r.handlerTypeRequired = reflect.FuncOf(inBoth, nil, false)
+	r.middlewareTypeRequired = reflect.FuncOf(inBoth, outMiddleware, false)
 }
 
-// saveWhenExtendedCtx performs linking all accumulated events with passed
-// view handler or view middleware user callback cb, when context is extended.
-// isMiddleware reports whether cb is view handler or view middleware.
-func (r *Registrator) saveWhenExtendedCtx(cb interface{}, isMiddleware bool) *tRegistratorError {
-
-	// cb is not nil interface at this code point
-	// (checked by Handler/Middleware methods).
-
-	cbType := reflect.TypeOf(cb)
-
-	if !isMiddleware && cbType != r.tHandlerCtxExtended {
-		err := Errors.EventRegistration.IncompatibleContextType.cp()
-		err = err.th(cbType.String())
-		err = err.tw(r.tHandlerCtxExtended.String())
-		return err
-	}
-
-	if isMiddleware && cbType != r.tMiddlewareCtxExtended {
-		err := Errors.EventRegistration.IncompatibleContextType.cp()
-		err = err.th(cbType.String())
-		err = err.tw(r.tMiddlewareCtxExtended.String())
-		return err
-	}
-
-	// if cbType.Kind() != reflect.Func {
-	// 	// return err - incompatible type
-	// }
-
-	// // cb must take only one argument
-	// if cbType.NumIn() != 1 {
-	// 	// return err - incompatible type
-	// }
-
-	// // cb must take argument by pointer
-	// if cbArgType := cbType.In(0); cbArgType.Kind() == reflect.Ptr {
-
-	// 	// and type of argument passed by its pointer should be the same
-	// 	// as the type returned by user context extender
-	// 	if cbArgType = cbArgType.Elem(); cbArgType != r.tCtxExtended {
-	// 		// return err - incompatible type
-	// 	}
-	// } else {
-	// 	// return err - incompatible type
-	// }
-
-	// // cb must not have return arguments if cb is handler
-	// if !isMiddleware && cbType.NumOut() != 0 {
-	// 	// return err - incompatible type
-	// }
-
-	// if isMiddleware {
-	// 	// cb must have only one return argument if cb is middleware
-	// 	if cbType.NumOut() != 1 {
-	// 		// return err - incompatible type
-	// 	}
-
-	// 	// cb must have bool as type of returned argument if cb is middleware
-	// 	if retArgType := cbType.Out(0); retArgType.Kind() != reflect.Bool {
-	// 		// return err - incompatible type
-	// 	}
-	// }
-
-	cbPtr := dangerous.FnPtrCallable(cb)
-	if cbPtr == nil {
-		err := Errors.EventRegistration.InternalError.cp()
-		err = err.msg("gext.dangerous.FnPtrCallable in saveWhenExtendedCtx return nil")
-		return err
-	}
-
-	// At this code point cb is an untyped pointer to valid handler or middleware
-	// (not nil, arguments types are valid, return types are valid, etc).
-	return r.saveAccumulated(cbPtr, isMiddleware, true)
+// Match returns a slice of handlers or slice of middlewares (isMiddleware flag)
+// associated with an event, identification signs of which are passed.
+// A real type of return value will be *[]unsafe.Pointer.
+func (r *Registrator) Match(typ event.Type, data event.Data, viewID view.IDEnc, isMiddleware bool) []unsafe.Pointer {
+	return r.access(nil, typ, data, viewID, isMiddleware)
 }
 
-// saveAccumulated links all accumulated events with passed untyped callback
-// (may be handler, middleware; for default or extended context).
-func (r *Registrator) saveAccumulated(cb unsafe.Pointer, isMiddleware, isCtxExtended bool) []tRegistratorError {
+// save performs linking all accumulated events with passed
+// handler or middleware and returns nil if it was successfully.
+//
+// cb is handler or middleware functor,
+// isMiddleware reports whether cb is handler or middleware,
+// wantType is one of r.handlerTypeRequired or r.middlewareTypeRequired.
+func (r *Registrator) save(cb interface{}, isMiddleware bool, wantType reflect.Type) *EBadCallback {
+
+	// cb == nil also handlers here
+	if haveType := reflect.TypeOf(cb); haveType != wantType {
+		return makeEBadCallback(isMiddleware, haveType == nil, wantType.String(), haveType.String(), r.accumulatedRules)
+	}
+
+	// FnPtrCallable may return nil only if cb == nil, there is no need a nil check
+	cbPtr := sys.FnPtrCallable(cb)
 
 	// Reg as general handler/middleware
-	if r.currentRules == nil {
-		r.save(cb, cEventTypeInvalid, cEvDa, viewID, isMiddleware, isCtxExtended)
+	if r.accumulatedRules == nil {
+		r.access(cbPtr, event.CTypeInvalid, event.CDataNil, view.CIDEncNil, isMiddleware)
 		return nil
 	}
 
-	var (
-		converter = r.parent.parent.converter
-		errs      []tRegistratorError
-	)
-
-	for _, eventRegister := range r.currentRules {
-
-		if len(eventRegister.When) != 0 {
-			for _, when := range eventRegister.When {
-
-				if whenEncoded, encodeErr := converter.Encode(when); encodeErr == nil {
-					r.save(cb, eventRegister.Type, eventRegister.Data, whenEncoded, isMiddleware, isCtxExtended)
-
-				} else {
-					// todo: Add error grouping
-					err := Errors.EventRegistration.InternalError.cp()
-					err = err.msg(encodeErr.What)
-					err = err.e2(*makeRule(eventRegister.Type, eventRegister.Data, []tViewID{when}))
-					errs = append(errs, err)
-				}
-			}
-		} else {
-			r.save(cb, eventRegister.Type, eventRegister.Data, cViewIDEncodedNull, isMiddleware, isCtxExtended)
+	for _, rule := range r.accumulatedRules {
+		if len(rule.When) == 0 {
+			r.access(cbPtr, rule.Type, rule.Data, view.CIDEncNil, isMiddleware)
+			continue
 		}
-
+		for _, when := range rule.When {
+			viewID := r.converter.Encode(when)
+			r.access(cbPtr, rule.Type, rule.Data, viewID, isMiddleware)
+		}
 	}
 
-	return errs
+	return nil
 }
 
-// match returns a slice of handlers or slice of middlewares (isMiddleware flag)
-// associated with an event, identification signs of which are passed.
-// A real type of return value will be one of:
-// *[]FViewHandler, *[]FViewMiddleware, *[]unsafe.Pointer.
-// More info: Registrator.access.
-func (r *Registrator) match(typ event.Type, data event.Data, viewID view.IDEnc, isMiddleware, isCtxExtended bool) unsafe.Pointer {
-	return r.access(nil, typ, data, viewID, isMiddleware, isCtxExtended)
-}
-
-// save links cb as handler or middleware (isMiddleware flag)
-// of default or extended context (isCtxExtended flat)
-// with an event identification signs of which are passed.
-// More info: Registrator.access.
-func (r *Registrator) save(cb unsafe.Pointer, typ event.Type, data event.Data, viewID view.IDEnc, isMiddleware, isCtxExtended bool) {
-	r.access(cb, typ, data, viewID, isMiddleware, isCtxExtended)
-}
-
-// access does the one of two things Registrator.save and Registrator.match describes.
+// access does the one of two things Registrator.save and Registrator.Match describes.
 // It depends on whether cb is nil or not. Returns nil if works in "save" mode
-// or if requested callbacks not found in "match" mode.
+// or if requested callbacks not found in "Match" mode.
 // Detailed description inside.
-func (r *Registrator) access(cb unsafe.Pointer, typ event.Type, data event.Data, viewID view.IDEnc, isMiddleware, isCtxExtended bool) unsafe.Pointer {
-
-	// save infers storage type using isMiddleware, isCtxExtended flags,
-	// checks whether storage is nil, and if it is so, allocates memory,
-	// and then after all saves cb to storage, returns storage.
-	save := func(storage, cb unsafe.Pointer, isMiddleware, isCtxExtended bool) unsafe.Pointer {
-
-		switch {
-		case !isMiddleware && !isCtxExtended:
-			storageTypedPtr := (*[]FViewHandler)(storage)
-			if storageTypedPtr == nil {
-				storageData := make([]FViewHandler, 0, 1)
-				storageTypedPtr = &storageData
-			}
-			*storageTypedPtr = append(*storageTypedPtr, *(*FViewHandler)(cb))
-			storage = unsafe.Pointer(storageTypedPtr)
-
-		case isMiddleware && !isCtxExtended:
-			storageTypedPtr := (*[]FViewMiddleware)(storage)
-			if storageTypedPtr == nil {
-				storageData := make([]FViewMiddleware, 0, 1)
-				storageTypedPtr = &storageData
-			}
-			*storageTypedPtr = append(*storageTypedPtr, *(*FViewMiddleware)(cb))
-			storage = unsafe.Pointer(storageTypedPtr)
-
-		case isCtxExtended:
-			storageTypedPtr := (*[]unsafe.Pointer)(storage)
-			if storageTypedPtr == nil {
-				storageData := make([]unsafe.Pointer, 0, 1)
-				storageTypedPtr = &storageData
-			}
-			*storageTypedPtr = append(*storageTypedPtr, cb)
-			storage = unsafe.Pointer(storageTypedPtr)
-		}
-		return storage
-	}
+func (r *Registrator) access(cb unsafe.Pointer, typ event.Type, data event.Data, viewID view.IDEnc, isMiddleware bool) []unsafe.Pointer {
 
 	// Typedefs described below are created for a more compact way
 	// to describe read/write operations with Registrator's storages.
@@ -519,24 +255,27 @@ func (r *Registrator) access(cb unsafe.Pointer, typ event.Type, data event.Data,
 	// Thus, S1L3 - section 1, level 3 - an alias to the map type of the last
 	// "view" in 1st storage section callbacks.
 
-	type tS1L3 map[event.Data]unsafe.Pointer
+	type tS1L3 map[event.Data][]unsafe.Pointer
 	type tS1L2 map[view.IDEnc]tS1L3
 	type tS1L1 map[event.Type]tS1L2
 
-	type tS2L2 map[event.Data]unsafe.Pointer
+	type tS2L2 map[event.Data][]unsafe.Pointer
 	type tS2L1 map[event.Type]tS2L2
 
-	type tS4L1 map[view.IDEnc]unsafe.Pointer
+	type tS4L2 map[view.IDEnc][]unsafe.Pointer
+	type tS4L1 map[event.Type]tS4L2
+
+	type tS5L1 map[event.Type][]unsafe.Pointer
 
 	// ptrField is a pointer to some Registrator field.
 	// In all switch cases presented below the first action is initializing
 	// ptrField.
-	// It allows to write one code-snippet for 4 different cases:
-	// handlers storage, handlers for extended context storage,
-	// middlewares storage, middlewares for extended context storage.
+	// It allows to write one code-snippet for both different cases:
+	// handlers storage and middlewares storage.
 	var ptrField unsafe.Pointer
 
 	isReg := cb != nil
+	isSimpleType := typ != event.CTypeInvalid && r.simplesChecker(typ)
 
 	// WARNING!
 	// All algorithms and operations presented below (in switch cases)
@@ -553,106 +292,88 @@ func (r *Registrator) access(cb unsafe.Pointer, typ event.Type, data event.Data,
 
 	// NOTE.
 	// All switch cases are numbered and have the same number as the section number
-	// in the tRegistator's fields description.
+	// in the Registator's fields description.
 
 	switch {
 
 	// 3 SECTION: "GLOBAL CALLBACKS".
-	case typ == cEventTypeInvalid:
+	case typ == event.CTypeInvalid:
 
 		switch {
-		case !isMiddleware && !isCtxExtended:
+		case !isMiddleware:
 			ptrField = unsafe.Pointer(&r.handlersMain)
 
-		case !isMiddleware && isCtxExtended:
-			ptrField = unsafe.Pointer(&r.handlersMainExt)
-
-		case isMiddleware && !isCtxExtended:
+		case isMiddleware:
 			ptrField = unsafe.Pointer(&r.middlewaresMain)
-
-		case isMiddleware && isCtxExtended:
-			ptrField = unsafe.Pointer(&r.middlewaresMainExt)
 		}
 
 		if isReg {
-			storage := *(*unsafe.Pointer)(ptrField)
-			storage = save(storage, cb, isMiddleware, isCtxExtended)
-			*(*unsafe.Pointer)(ptrField) = storage
+			storage := *(*[]unsafe.Pointer)(ptrField)
+			storage = append(storage, cb)
+			*(*[]unsafe.Pointer)(ptrField) = storage
 		} else {
-			return *(*unsafe.Pointer)(ptrField)
+			return *(*[]unsafe.Pointer)(ptrField)
 		}
 
 	// 5 SECTION: "TEXT CALLBACKS W/O VIEW ID".
-	case typ == CEventTypeText && viewID == cViewIDEncodedNull:
+	case isSimpleType && viewID == view.CIDEncNil:
 
 		switch {
-		case !isMiddleware && !isCtxExtended:
+		case !isMiddleware:
 			ptrField = unsafe.Pointer(&r.handlerTextJust)
 
-		case !isMiddleware && isCtxExtended:
-			ptrField = unsafe.Pointer(&r.handlerTextJustExt)
-
-		case isMiddleware && !isCtxExtended:
+		case isMiddleware:
 			ptrField = unsafe.Pointer(&r.middlewaresTextJust)
-
-		case isMiddleware && isCtxExtended:
-			ptrField = unsafe.Pointer(&r.middlewaresTextJustExt)
 		}
 
 		if isReg {
-			storage := *(*unsafe.Pointer)(ptrField)
-			storage = save(storage, cb, isMiddleware, isCtxExtended)
-			*(*unsafe.Pointer)(ptrField) = storage
+			if *(*tS5L1)(ptrField) == nil {
+				*(*tS5L1)(ptrField) = make(tS5L1)
+			}
+			storage := (*(*tS5L1)(ptrField))[typ]
+			storage = append(storage, cb)
+			(*(*tS5L1)(ptrField))[typ] = storage
 		} else {
-			return *(*unsafe.Pointer)(ptrField)
+			return (*(*tS5L1)(ptrField))[typ]
 		}
 
 	// 4 SECTION "TEXT CALLBACKS WITH VIEW ID"
-	// Condition "viewID != cViewIDEncodedNull" is omitted.
-	case typ == CEventTypeText:
+	// Condition "viewID != view.CIDEncNil" is omitted.
+	case isSimpleType:
 
 		switch {
-		case !isMiddleware && !isCtxExtended:
+		case !isMiddleware:
 			ptrField = unsafe.Pointer(&r.handlerTextWhen)
 
-		case !isMiddleware && isCtxExtended:
-			ptrField = unsafe.Pointer(&r.handlerTextWhenExt)
-
-		case isMiddleware && !isCtxExtended:
+		case isMiddleware:
 			ptrField = unsafe.Pointer(&r.middlewaresTextWhen)
-
-		case isMiddleware && isCtxExtended:
-			ptrField = unsafe.Pointer(&r.middlewaresTextWhenExt)
 		}
 
 		if isReg {
 			if *(*tS4L1)(ptrField) == nil {
 				*(*tS4L1)(ptrField) = make(tS4L1)
 			}
-			storage := (*(*tS4L1)(ptrField))[viewID]
-			storage = save(storage, cb, isMiddleware, isCtxExtended)
-			(*(*tS4L1)(ptrField))[viewID] = storage
+			if (*(*tS4L1)(ptrField))[typ] == nil {
+				(*(*tS4L1)(ptrField))[typ] = make(tS4L2)
+			}
+			storage := (*(*tS4L1)(ptrField))[typ][viewID]
+			storage = append(storage, cb)
+			(*(*tS4L1)(ptrField))[typ][viewID] = storage
 		} else {
-			return (*(*tS4L1)(ptrField))[viewID]
+			return (*(*tS4L1)(ptrField))[typ][viewID]
 		}
 
 	// 2 SECTION "ALL OTHER CALLBACKS W/O VIEW ID"
-	// Condition "typ != CEventTypeText" is omitted.
+	// Condition "isSimpleType" is omitted.
 	// Conditions "typ == <typ1> || ... || typ == <typN>" are omitted.
-	case viewID == cViewIDEncodedNull:
+	case viewID == view.CIDEncNil:
 
 		switch {
-		case !isMiddleware && !isCtxExtended:
+		case !isMiddleware:
 			ptrField = unsafe.Pointer(&r.handlersJust)
 
-		case !isMiddleware && isCtxExtended:
-			ptrField = unsafe.Pointer(&r.handlersJustExt)
-
-		case isMiddleware && !isCtxExtended:
+		case isMiddleware:
 			ptrField = unsafe.Pointer(&r.middlewaresJust)
-
-		case isMiddleware && isCtxExtended:
-			ptrField = unsafe.Pointer(&r.middlewaresJustExt)
 		}
 
 		if isReg {
@@ -660,33 +381,27 @@ func (r *Registrator) access(cb unsafe.Pointer, typ event.Type, data event.Data,
 				*(*tS2L1)(ptrField) = make(tS2L1)
 			}
 			if (*(*tS2L1)(ptrField))[typ] == nil {
-				(*(*tS1L1)(ptrField))[typ] = make(tS2L2)
+				(*(*tS2L1)(ptrField))[typ] = make(tS2L2)
 			}
 			storage := (*(*tS2L1)(ptrField))[typ][data]
-			storage = save(storage, cb, isMiddleware, isCtxExtended)
+			storage = append(storage, cb)
 			(*(*tS2L1)(ptrField))[typ][data] = storage
 		} else {
 			return (*(*tS2L1)(ptrField))[typ][data]
 		}
 
 	// 1 SECTION "ALL OTHER CALLBACKS WITH VIEW ID"
-	// Condition "typ != CEventTypeText" is omitted.
+	// Condition "isSimpleType" is omitted.
 	// Conditions "typ == <typ1> || ... || typ == <typN>" are omitted.
-	// Condition "viewID != cViewIDEncodedNull" is omitted.
+	// Condition "viewID != view.CIDEncNil" is omitted.
 	default:
 
 		switch {
-		case !isMiddleware && !isCtxExtended:
+		case !isMiddleware:
 			ptrField = unsafe.Pointer(&r.handlersWhen)
 
-		case !isMiddleware && isCtxExtended:
-			ptrField = unsafe.Pointer(&r.handlersWhenExt)
-
-		case isMiddleware && !isCtxExtended:
+		case isMiddleware:
 			ptrField = unsafe.Pointer(&r.middlewaresWhen)
-
-		case isMiddleware && isCtxExtended:
-			ptrField = unsafe.Pointer(&r.middlewaresWhenExt)
 		}
 
 		if isReg {
@@ -700,7 +415,7 @@ func (r *Registrator) access(cb unsafe.Pointer, typ event.Type, data event.Data,
 				(*(*tS1L1)(ptrField))[typ][viewID] = make(tS1L3)
 			}
 			storage := (*(*tS1L1)(ptrField))[typ][viewID][data]
-			storage = save(storage, cb, isMiddleware, isCtxExtended)
+			storage = append(storage, cb)
 			(*(*tS1L1)(ptrField))[typ][viewID][data] = storage
 		} else {
 			return (*(*tS1L1)(ptrField))[typ][viewID][data]
@@ -708,18 +423,22 @@ func (r *Registrator) access(cb unsafe.Pointer, typ event.Type, data event.Data,
 
 	}
 
-	// All registration operations presented above do not return something
-	// and lead here.
+	// All registration operations presented above return nothing and lead here.
+	// We shouldn't return something if it was a registration.
 	return nil
 }
 
-// TODO: comment me, implement me
-func MakeRegistrator() *Registrator {
-	panic("implement me")
-}
+// MakeRegistrator creates a new Registrator object, initializes it with passed
+// view ID converter object and simples event type's checker.
+// It also sets that registered handlers or middlewares should be compatible
+// with passed context type.
+func MakeRegistrator(converter *view.IDConv, ctxType reflect.Type, simplesChecker func(typ event.Type) (isSimple bool)) *Registrator {
 
-// whcv is a WHen ConVerter - the special type converter function
-// []string -> []view.ID without memory reallocation.
-func whcv(when []string) []view.ID {
-	return *(*[]view.ID)(unsafe.Pointer(&when))
+	var r Registrator
+
+	r.converter = converter
+	r.simplesChecker = simplesChecker
+	r.RegenerateRequiredTypes(ctxType)
+
+	return &r
 }
