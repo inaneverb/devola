@@ -16,7 +16,6 @@ const (
 	// Invalid View ID error.
 	// Returned:
 	// - From Encode method if invalid View ID is passed as argument
-	// - From Register method if invalid View ID is passed as argument
 	// - From Decode method if after decoding encoded View ID, the decoded
 	//   View ID is invalid.
 	ECInvalidID errors.Code = 1
@@ -30,22 +29,10 @@ const (
 
 	// Unregistered View ID error.
 	// Returned:
-	// - From Encode method if an unregistered by Register method View ID
+	// - From Encode method if an unregistered by reg method View ID
 	//   is passed as argument.
 	// - From Decode method if passed an encoded View ID without decoded View ID
 	//   pair (as a conclusion, there is no registered View ID with received
 	//   encoded View ID).
 	ECNotRegistered errors.Code = 3
-
-	// Already registered View ID error.
-	// Returned:
-	// - From Register method if passed View ID is already registered by
-	//   one of previous Register calls.
-	ECAlreadyRegistered errors.Code = 4
-
-	// Registered View IDs limit is reached error.
-	// Returned:
-	// - From Register method if there is limit of registered View IDs
-	//   is reached and no one View ID can be registered anymore.
-	ECLimitReached errors.Code = 5
 )

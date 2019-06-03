@@ -14,8 +14,7 @@ import (
 //
 // Works using a two maps:
 // A view from ID to encoded value (IDEnc) and vice-versa.
-// Encode, Decode methods using these maps and Register method just to add
-// entries in these maps.
+// Encode, Decode methods using these maps.
 type IDConv struct {
 
 	// When some new View ID registers, the entry of this link
@@ -27,40 +26,40 @@ type IDConv struct {
 	mDecodeStorage map[IDEnc]ID
 
 	// Generator for encoded View ID.
-	// Increases by one for each new View ID by Register method.
+	// Increases by one for each new View ID by Encode method.
 	encodedIDGenerator IDEnc
 }
 
 // Encode tries to encode passed View ID.
-// Returns an encoded ID and error code of that operation.
-// (See error codes in ec.go file).
-//
-// So, it will be successfully only if passed id is already registered
-// by Register method and all internal checks are passed.
-func (idc *IDConv) Encode(id ID) (IDEnc, errors.Code) {
+// Also registers passed View ID if it is not. Returns an encoded ID.
+func (idc *IDConv) Encode(id ID) IDEnc {
 
 	if !id.IsValid() {
-		return CIDEncNil, ECInvalidID
+		return CIDEncNil
 	}
 
-	idenc, found := idc.mEncodeStorage[id]
-	if !found {
-		return CIDEncNil, ECNotRegistered
+	if alreadyRegistered, found := idc.mEncodeStorage[id]; found {
+		return alreadyRegistered
 	}
 
-	if !idenc.IsValid() {
-		return CIDEncNil, ECInvalidIDEnc
+	if !idc.encodedIDGenerator.IsValid() {
+		return CIDEncNil
 	}
 
-	return idenc, errors.ECOK
+	idc.encodedIDGenerator++
+	idc.mEncodeStorage[id] = idc.encodedIDGenerator
+	idc.mDecodeStorage[idc.encodedIDGenerator] = id
+
+	return idc.encodedIDGenerator
 }
 
 // Decode tries to decode passed encoded View ID.
+//
 // Returns a decoded ID and error code of that operation.
 // (See error codes in ec.go file).
 //
 // So, it will be successfully only if some View ID is already registered
-// by Register method and Register method links idenc with that some View ID.
+// by Encode method.
 func (idc *IDConv) Decode(idenc IDEnc) (ID, errors.Code) {
 
 	if !idenc.IsValid() {
@@ -79,33 +78,6 @@ func (idc *IDConv) Decode(idenc IDEnc) (ID, errors.Code) {
 	return id, errors.ECOK
 }
 
-// Register tries to register View ID (with encoding it).
-// Returns an encoded View ID and error code of registering operation.
-// (See error codes in ec.go file).
-//
-// So, it will be successfully only if the same View ID is not already registered
-// and if limit of registered View IDs is not reached.
-func (idc *IDConv) Register(id ID) (IDEnc, errors.Code) {
-
-	if !id.IsValid() {
-		return CIDEncNil, ECInvalidID
-	}
-
-	if _, found := idc.mEncodeStorage[id]; found {
-		return CIDEncNil, ECAlreadyRegistered
-	}
-
-	if !idc.encodedIDGenerator.IsValid() {
-		return CIDEncNil, ECLimitReached
-	}
-
-	idc.encodedIDGenerator++
-	idc.mEncodeStorage[id] = idc.encodedIDGenerator
-	idc.mDecodeStorage[idc.encodedIDGenerator] = id
-
-	return idc.encodedIDGenerator, errors.ECOK
-}
-
 // MakeIDConv is the IDConv constructor.
 //
 // Allocates memory for internal parts and initializes the default state of
@@ -114,6 +86,6 @@ func MakeIDConv() *IDConv {
 	return &IDConv{
 		mEncodeStorage:     make(map[ID]IDEnc),
 		mDecodeStorage:     make(map[IDEnc]ID),
-		encodedIDGenerator: CIDEncStartValue,
+		encodedIDGenerator: cIDEncStartValue,
 	}
 }
