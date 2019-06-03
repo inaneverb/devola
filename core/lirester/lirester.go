@@ -83,14 +83,10 @@ type Lirester struct {
 		// that chat will be deleted from Lirester.
 		chatLifeTime int64
 
-		// X of 2nd Telegram restriction for chats with user.
 		userChatN uint8
-		// T' of 2nd Telegram restriction for chats with user.
 		userChatT int64
 
-		// X of 2nd Telegram restriction for group chats.
 		groupChatN uint8
-		// T' of 2nd Telegram restriction for group chats.
 		groupChatT int64
 
 		// Profiler enable flag for profiling Lirester.cleanupDecCounters.
@@ -130,19 +126,19 @@ const (
 	// After this time the process of chat destroying will be started.
 	cChatLifetime = int64(10 * time.Minute)
 
-	// Default X of 2nd Telegram restriction for chats with user.
+	// Default X for chats with user.
 	// More info: Lirester "How it works" section, p.2.
 	cUserChatN = uint8(1)
 
-	// Default T' of 2nd Telegram restriction for chats with user.
+	// Default T' for chats with user.
 	// More info: Lirester "How it works" section, p.2.
 	cUserChatT = int64(1 * time.Second)
 
-	// Default X of 2nd Telegram restriction for group chats.
+	// Default X for group chats.
 	// More info: Lirester "How it works" section, p.2.
 	cGroupChatN = uint8(20)
 
-	// Default T' of 2nd Telegram restriction for group chats.
+	// Default T' for group chats.
 	// More info: Lirester "How it works" section, p.2.
 	cGroupChatT = int64(1 * time.Minute)
 
@@ -168,11 +164,11 @@ func (l *Lirester) Try(now int64, chatID chat.ID) (isAllow bool) {
 		return false
 	}
 
-	var chat = l.getChat(now, chatID)
-	var alreadySent = chat.howMuch()
+	var ch = l.getChat(now, chatID)
+	var alreadySent = ch.howMuch()
 
-	allowForUser := chat.isUser() && alreadySent < l.consts.userChatN
-	allowForGroup := chat.isGroup() && alreadySent < l.consts.groupChatN
+	allowForUser := ch.isUser() && alreadySent < l.consts.userChatN
+	allowForGroup := ch.isGroup() && alreadySent < l.consts.groupChatN
 
 	return alreadySent == 0 || allowForUser || allowForGroup
 }
@@ -215,8 +211,8 @@ func (l *Lirester) Cleanup(now int64) {
 // If an info about that chat isn't specified in Lirester, -1 is returned.
 func (l *Lirester) LastUpdated(chatID chat.ID) int64 {
 
-	if chat := l.findChat(chatID); chat != nil {
-		return chat.lastUpdated
+	if ch := l.findChat(chatID); ch != nil {
+		return ch.lastUpdated
 	}
 	return -1
 }
@@ -253,14 +249,14 @@ func (l *Lirester) findChat(chatID chat.ID) *lirchat {
 // It guarantees, that getChat always returns not nil object.
 func (l *Lirester) getChat(now int64, chatID chat.ID) *lirchat {
 
-	var chat *lirchat
+	var ch *lirchat
 
-	if chat = l.findChat(chatID); chat == nil {
-		chat = makeChat().setLastUpdated(now)
-		l.core[chatID] = chat
+	if ch = l.findChat(chatID); ch == nil {
+		ch = makeChat().setLastUpdated(now)
+		l.core[chatID] = ch
 	}
 
-	return chat
+	return ch
 }
 
 // addCleanup creates a new cleanup rule for a chat with specified chat id
@@ -312,12 +308,12 @@ func (l *Lirester) cleanupDecCounters(now int64) {
 		// If cleanup config for some chat is existed, the chat in map
 		// MUST BE.
 		// If nil will be returned here, it is SDK error and it should be fixed.
-		chat := l.findChat(clcfg.chatID)
+		ch := l.findChat(clcfg.chatID)
 
 		// If counter isn't equal to zero, apply cleanup (decrease counter)
 		// todo: Remove "if", because if cleanup config is, counter must be != 0
-		if chat.howMuch() > 0 {
-			chat.decHowMuch(1).setLastUpdated(now)
+		if ch.howMuch() > 0 {
+			ch.decHowMuch(1).setLastUpdated(now)
 		}
 	}
 
@@ -338,9 +334,9 @@ func (l *Lirester) cleanupDestroyChats(now int64) {
 	var watcher = l.prof.WatchIf(l.consts.enProfCleanupDestroyChats).Start()
 
 	// Remove chats, lifetime of which is over
-	for chatID, chat := range l.core {
+	for chatID, ch := range l.core {
 
-		if l.isLifetimeOver(now, chat) {
+		if l.isLifetimeOver(now, ch) {
 			delete(l.core, chatID)
 		}
 	}
@@ -387,7 +383,7 @@ func (l *Lirester) restart() {
 }
 
 // applyParams applies each param from params slice to the current Lirester.
-// It overwrites alreay applied parameters.
+// It overwrites already applied parameters.
 func (l *Lirester) applyParams(params []interface{}) {
 	// TODO: Maybe something more must be here?
 

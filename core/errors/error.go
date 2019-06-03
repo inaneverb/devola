@@ -93,7 +93,7 @@ func (be *BaseError) Error() string {
 	return "(" + strconv.Itoa(int(be.code)) + "): " + be.what
 }
 
-// Error returns an error code and message of occurred error
+// String returns an error code and message of occurred error
 // in the following format: "(<code>): <message>".
 // Works the same as Error method.
 //
