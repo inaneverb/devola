@@ -125,3 +125,19 @@ func (e *EBadCallback) Error() string {
 func (e *EBadCallback) String() string {
 	return e.Error()
 }
+
+// makeEBadCallback creates a new EBadCallback object with the passed params,
+// but with the copy of appliedTo slice.
+func makeEBadCallback(isMiddleware, isNil bool, wantType, haveType string, appliedTo []rule) *EBadCallback {
+
+	var e EBadCallback
+
+	e.IsMiddleware, e.IsNil = isMiddleware, isNil
+	e.WantType, e.HaveType = wantType, haveType
+
+	// Perfect one-line copying slice.
+	// See https://github.com/go101/go101/wiki
+	e.AppliedTo = append(appliedTo[:0:0], appliedTo...)
+
+	return &e
+}
