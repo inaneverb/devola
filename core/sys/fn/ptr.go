@@ -3,7 +3,7 @@
 // Contacts: <qioalice@gmail.com>.
 // License: https://opensource.org/licenses/MIT
 
-package fnptr
+package fn
 
 import (
 	"unsafe"
@@ -28,7 +28,7 @@ import (
 // Unless you have an untyped pointer like void* in C.
 //
 // reflect.ValueOf(f).Pointer() returns a REAL function address,
-// the same as TakeNormal(f) returns, but you CAN NOT use it to call.
+// the same as TakeRealAddr(f) returns, but you CAN NOT use it to call.
 //
 // CAN:
 // f := func(){}
@@ -49,22 +49,22 @@ import (
 
 // TODO: Review doc above
 
-// TakeNormal takes and returns a real address of function fn or nil if fn is nil.
+// TakeRealAddr takes and returns a real address of function fn or nil if fn is nil.
 //
 // If fn is not a function, you still get the pointer, but it is unknown
 // what that pointer points to.
 //
 // YOU CAN NOT USE RETURNED POINTER TO CALLING PASSED FUNCTION!
-// For that purpose use TakeCallable to take callable pointer directly
-// or convert returned pointer to callable pointer using Convert2Callable func.
-func TakeNormal(fn interface{}) unsafe.Pointer {
+// For that purpose use TakeCallableAddr to take callable pointer directly
+// or convert returned pointer to callable pointer using AddrConvert2Callable func.
+func TakeRealAddr(fn interface{}) unsafe.Pointer {
 	if fn == nil {
 		return nil
 	}
 	return (*gotypes.Interface)(unsafe.Pointer(&fn)).Word
 }
 
-// TakeCallable takes and returns an "callable" address of function fn or nil if fn is nil.
+// TakeCallableAddr takes and returns an "callable" address of function fn or nil if fn is nil.
 //
 // If fn is not a function, you still get the pointer, but it is unknown
 // what that pointer points to.
@@ -75,19 +75,19 @@ func TakeNormal(fn interface{}) unsafe.Pointer {
 //
 // You can AVOID TYPE CHECKS using that way (wrong argument types, wrong return types)
 // but there is UB in that way and do it only if you know what you're doing.
-func TakeCallable(fn interface{}) unsafe.Pointer {
+func TakeCallableAddr(fn interface{}) unsafe.Pointer {
 
 	// There is no need nil checks,
-	// because TakeNormal and Convert2Callable already has it
-	return Convert2Callable(TakeNormal(fn))
+	// because TakeRealAddr and AddrConvert2Callable already has it
+	return AddrConvert2Callable(TakeRealAddr(fn))
 }
 
-// Convert2Callable converts a normal function pointer to a pointer using which
+// AddrConvert2Callable converts a normal function pointer to a pointer using which
 // becomes possible to call a function normalPtr points to.
 //
-// It is assumed that normalPtr has been obtained using TakeNormal func.
+// It is assumed that normalPtr has been obtained using TakeRealAddr func.
 // PLEASE DO NOT PASS POINTERS OBTAINED BY ANOTHER MEANS.
-func Convert2Callable(normalPtr unsafe.Pointer) (callablePtr unsafe.Pointer) {
+func AddrConvert2Callable(normalPtr unsafe.Pointer) (callablePtr unsafe.Pointer) {
 
 	type fptr struct {
 		ptr unsafe.Pointer
@@ -102,11 +102,11 @@ func Convert2Callable(normalPtr unsafe.Pointer) (callablePtr unsafe.Pointer) {
 	return unsafe.Pointer(&o.ptr)
 }
 
-// Convert2Normal converts a callable function pointer to a normal, internal func's pointer.
+// AddrConvert2Normal converts a callable function pointer to a normal, internal func's pointer.
 //
-// It is assumed that callablePtr has been obtained using TakeCallable func.
+// It is assumed that callablePtr has been obtained using TakeCallableAddr func.
 // PLEASE DO NOT PASS POINTERS OBTAINED BY ANOTHER MEANS.
-func Convert2Normal(callablePtr unsafe.Pointer) (normalPtr unsafe.Pointer) {
+func AddrConvert2Normal(callablePtr unsafe.Pointer) (normalPtr unsafe.Pointer) {
 
 	if callablePtr == nil {
 		return nil
