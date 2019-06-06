@@ -3,14 +3,14 @@
 // Contacts: <qioalice@gmail.com>.
 // License: https://opensource.org/licenses/MIT
 
-package sys
+package gotypes
 
 import (
 	"unsafe"
 )
 
-// GoInterface represents what "interface{}" means in internal Golang parts.
-type GoInterface struct {
+// Interface represents what "interface{}" means in internal Golang parts.
+type Interface struct {
 	Type uintptr        // pointer to the type definition struct
 	Word unsafe.Pointer // pointer to the value
 }
