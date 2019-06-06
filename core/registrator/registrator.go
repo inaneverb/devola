@@ -10,7 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/qioalice/devola/core/event"
-	"github.com/qioalice/devola/core/sys"
+	"github.com/qioalice/devola/core/sys/fn"
 	"github.com/qioalice/devola/core/view"
 )
 
@@ -220,7 +220,7 @@ func (r *Registrator) save(cb interface{}, isMiddleware bool, wantType reflect.T
 	}
 
 	// FnPtrCallable may return nil only if cb == nil, there is no need a nil check
-	cbPtr := sys.FnPtrCallable(cb)
+	cbPtr := fn.TakeCallableAddr(cb)
 
 	// Reg as general handler/middleware
 	if r.accumulatedRules == nil {
