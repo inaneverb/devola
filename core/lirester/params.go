@@ -7,6 +7,8 @@ package lirester
 
 import (
 	"time"
+
+	"github.com/qioalice/devola/core/chat"
 )
 
 // TODO: Add params to enable profiler
@@ -21,47 +23,14 @@ type Param func(l *Lirester)
 // Is a part of tParams type.
 type Params struct {
 
-	// Changes the main loop ticker delay to the passed value.
-	// Delay must be in the [100ms..1min] range.
-	// More info: Lirester.consts.mainLoopDelay field.
-	MainLoopDelay func(delay time.Duration) Param
+	// Changes N, T of 1st Lirester restriction rule (see Lirester's docs).
+	// There is no-op if n <= 0 or t <= 10ms and t/n must be in the range [100ms..1min].
+	NPerTGlobal func(n int, t time.Duration) Param
 
-	// Changes the Lirester internal chat's lifetime.
-	// Lifetime must be in the [1min..1day] range.
-	// More info: Lirester.consts.chatLifeTime field.
-	LChatLifetime func(lifetime time.Duration) Param
-
-	// Params to change some values about working Lirester around chats
-	// with users.
-	UserChat struct {
-
-		// Changes the value how many messages can be send to user chat
-		// per each iteration.
-		// Value must be in the [1..99] range.
-		// More info: Lirester.consts.cLiresterUserChatN field.
-		MessagesPerIter func(num uint8) Param
-
-		// Changes the duration of user chat's iteration.
-		// Value mist be in the [100ms..1h] range.
-		// More info: Lirester.consts.cLiresterUserChatT field.
-		IterPeriod func(period time.Duration) Param
-	}
-
-	// Params to change some values about working Lirester around group chats,
-	// channels, etc.
-	GroupChat struct {
-
-		// Changes the value how many messages can be send to user chat
-		// per each iteration.
-		// Value must be in the [1..99] range.
-		// More info: Lirester.consts.cLiresterUserChatN field.
-		MessagesPerIter func(num uint8) Param
-
-		// Changes the duration of user chat's iteration.
-		// Value mist be in the [100ms..1h] range.
-		// More info: Lirester.consts.cLiresterUserChatT field.
-		IterPeriod func(period time.Duration) Param
-	}
+	// Changes N'(i), T'(i) of 2nd Lirester restriction rule (see Lirester's docs).
+	// There is no-op if typ >= core/chat.MaxTypeValue or n <= 0 or t <= 10 ms
+	// and t/n must be in the range [100ms..1min].
+	NPerTForType func(n int, t time.Duration, typ chat.Type) Param
 }
 
 // A storage of all Lirester params.
@@ -70,63 +39,30 @@ var vParams Params
 // Initializes storage of all Lirester params.
 func init() {
 
-	vParams.MainLoopDelay =
-		func(delay time.Duration) Param {
-			if delay < 100*time.Microsecond || delay > 1*time.Minute {
-				return Param(nil)
-			}
-			return Param(func(l *Lirester) {
-				l.consts.mainLoopDelay = delay
-			})
+	vParams.NPerTGlobal = func(n int, t time.Duration) Param {
+		if n <= 0 || t <= 10*time.Microsecond {
+			return nil
 		}
+		delay := time.Duration(int64(t) / int64(n))
+		if delay < 100*time.Microsecond || delay > 1*time.Minute {
+			return nil
+		}
+		return func(l *Lirester) {
+			l.consts.mainLoopDelay = delay
+		}
+	}
 
-	vParams.LChatLifetime =
-		func(lifetime time.Duration) Param {
-			if lifetime < 1*time.Minute || lifetime > 24*time.Hour {
-				return Param(nil)
-			}
-			return Param(func(l *Lirester) {
-				l.consts.chatLifeTime = lifetime.Nanoseconds()
-			})
+	vParams.NPerTForType = func(n int, t time.Duration, typ chat.Type) Param {
+		if typ >= chat.MaxTypeValue || n <= 0 || t <= 10*time.Microsecond {
+			return nil
 		}
-
-	vParams.UserChat.MessagesPerIter =
-		func(num uint8) Param {
-			if num == 0 || num > 100 {
-				return Param(nil)
-			}
-			return Param(func(l *Lirester) {
-				l.consts.userChatN = num
-			})
+		delay := time.Duration(int64(t) / int64(n))
+		if delay < 100*time.Microsecond || delay > 1*time.Minute {
+			return nil
 		}
-
-	vParams.UserChat.IterPeriod =
-		func(period time.Duration) Param {
-			if period < 100*time.Microsecond || period > 1*time.Hour {
-				return Param(nil)
-			}
-			return Param(func(l *Lirester) {
-				l.consts.userChatT = period.Nanoseconds()
-			})
+		return func(l *Lirester) {
+			l.consts.Ns[typ] = uint8(n)
+			l.consts.Ts[typ] = int64(t)
 		}
-
-	vParams.GroupChat.MessagesPerIter =
-		func(num uint8) Param {
-			if num == 0 || num > 100 {
-				return Param(nil)
-			}
-			return Param(func(l *Lirester) {
-				l.consts.groupChatN = num
-			})
-		}
-
-	vParams.GroupChat.IterPeriod =
-		func(period time.Duration) Param {
-			if period < 100*time.Microsecond || period > 1*time.Hour {
-				return Param(nil)
-			}
-			return Param(func(l *Lirester) {
-				l.consts.groupChatT = period.Nanoseconds()
-			})
-		}
+	}
 }

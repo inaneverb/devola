@@ -41,3 +41,8 @@ func (p *Profiler) IsEnabledFor(action Action) bool {
 func (p *Profiler) WatchIf(cond bool) *Watcher {
 	panic("implement me")
 }
+
+//
+func (p *Profiler) For(action Action) *Watcher {
+
+}
