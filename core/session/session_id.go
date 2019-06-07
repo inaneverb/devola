@@ -3,7 +3,7 @@
 // Contacts: <qioalice@gmail.com>.
 // License: https://opensource.org/licenses/MIT
 
-package chat
+package session
 
 // SessionID represents ID of some session.
 // It's a part of Session object.

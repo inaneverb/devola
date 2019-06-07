@@ -3,11 +3,12 @@
 // Contacts: <qioalice@gmail.com>.
 // License: https://opensource.org/licenses/MIT
 
-package chat
+package session
 
 import (
 	"time"
 
+	"github.com/qioalice/devola/core/chat"
 	"github.com/qioalice/devola/core/view"
 )
 
@@ -31,7 +32,7 @@ type Session struct {
 	ViewIDEncoded view.IDEnc `json:"view_id_encoded"`
 
 	//
-	SentMessages MessageIDs `json:"sent_messages"`
+	SentMessages chat.MessageIDs `json:"sent_messages"`
 
 	//
 	ExpirationUnixstamp int64 `json:"expiration_unixstamp"`
