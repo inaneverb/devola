@@ -3,19 +3,23 @@
 // Contacts: <qioalice@gmail.com>.
 // License: https://opensource.org/licenses/MIT
 
-package sender
+package dechan
 
-// chatchan is an internal double-ended thread-safety queue for ToSend pointers.
+import (
+	"unsafe"
+)
+
+// Dechan is an internal double-ended thread-safety queue for pointers.
 // It's like golang chan but double-ended (pop front, push front)
-// and it's like normal chatchan but with golang chan features.
-type chatchan struct {
+// and it's like normal queue but with golang chan features.
+type Dechan struct {
 
 	// Base type and algos: https://github.com/gammazero/deque .
 	// Copyright (c) 2018 Andrew J. Gillis
 
 	// TODO: MAKE THREAD-SAFETY
 
-	buf    []*ToSend
+	buf    []unsafe.Pointer
 	head   int16
 	tail   int16
 	count  int16
@@ -25,19 +29,19 @@ type chatchan struct {
 // Predefined constants.
 const (
 
-	// cChChMinCapacity is the smallest capacity that deque may have.
+	// minCapacity is the smallest capacity that Dechan may have.
 	// Must be power of 2 for bitwise modulus: x % n == x & (n - 1).
-	cChChMinCapacity = 16
+	minCapacity = 16
 )
 
-// IsEmpty returns true of chatchat is empty or nil.
-func (ch *chatchan) IsEmpty() bool {
+// IsEmpty returns true if Dechan is empty or nil.
+func (ch *Dechan) IsEmpty() bool {
 	return ch == nil || ch.count == 0
 }
 
-// Len returns the number of elements currently stored in the chatchan.
-// Returns 0 if chatchat is nil.
-func (ch *chatchan) Len() int16 {
+// Len returns the number of elements currently stored in the Dechan.
+// Returns 0 if Dechan is nil.
+func (ch *Dechan) Len() int16 {
 	if ch == nil {
 		return 0
 	}
@@ -47,7 +51,7 @@ func (ch *chatchan) Len() int16 {
 // PushBack appends an element to the back of the queue. Implements FIFO when
 // elements are removed with PopFront(), and LIFO when elements are removed
 // with PopBack().
-func (ch *chatchan) PushBack(ptr *ToSend) {
+func (ch *Dechan) PushBack(ptr unsafe.Pointer) {
 	ch.growIfFull()
 
 	ch.buf[ch.tail] = ptr
@@ -57,7 +61,7 @@ func (ch *chatchan) PushBack(ptr *ToSend) {
 }
 
 // PushFront prepends an element to the front of the queue.
-func (ch *chatchan) PushFront(ptr *ToSend) {
+func (ch *Dechan) PushFront(ptr unsafe.Pointer) {
 	ch.growIfFull()
 
 	// Calculate new head position.
@@ -68,7 +72,7 @@ func (ch *chatchan) PushFront(ptr *ToSend) {
 
 // PopFront removes and returns the element from the front of the queue.
 // Implements FIFO when used with PushBack(). If the queue is empty, returns nil.
-func (ch *chatchan) PopFront() *ToSend {
+func (ch *Dechan) PopFront() unsafe.Pointer {
 	if ch.count <= 0 {
 		return nil
 	}
@@ -84,7 +88,7 @@ func (ch *chatchan) PopFront() *ToSend {
 
 // PopBack removes and returns the element from the back of the queue.
 // Implements LIFO when used with PushBack(). If the queue is empty, returns nil.
-func (ch *chatchan) PopBack() *ToSend {
+func (ch *Dechan) PopBack() unsafe.Pointer {
 	if ch.count <= 0 {
 		return nil
 	}
@@ -104,7 +108,7 @@ func (ch *chatchan) PopBack() *ToSend {
 // Front returns the element at the front of the queue. This is the element
 // that would be returned by PopFront(). This call returns nil if the queue is
 // empty.
-func (ch *chatchan) Front() *ToSend {
+func (ch *Dechan) Front() unsafe.Pointer {
 	if ch.count <= 0 {
 		return nil
 	}
@@ -114,7 +118,7 @@ func (ch *chatchan) Front() *ToSend {
 // Back returns the element at the back of the queue. This is the element
 // that would be returned by PopBack(). This call returns nil if the queue is
 // empty.
-func (ch *chatchan) Back() *ToSend {
+func (ch *Dechan) Back() unsafe.Pointer {
 	if ch.count <= 0 {
 		return nil
 	}
@@ -126,13 +130,13 @@ func (ch *chatchan) Back() *ToSend {
 // At(Len()-1) refers to the last element and is the same as Back().
 // If the index is invalid, returns nil.
 //
-// The purpose of At is to allow chatchan to serve as a more general purpose
+// The purpose of At is to allow Dechan to serve as a more general purpose
 // circular buffer, where items are only added to and removed from the ends of
-// the chatchan, but may be read from any place within the chatchan. Consider the
+// the Dechan, but may be read from any place within the Dechan. Consider the
 // case of a fixed-size circular log buffer: A new entry is pushed onto one end
 // and when full the oldest is popped from the other end. All the log entries
 // in the buffer must be readable without altering the buffer contents.
-func (ch *chatchan) At(i int16) *ToSend {
+func (ch *Dechan) At(i int16) unsafe.Pointer {
 	if i < 0 || i >= ch.count {
 		return nil
 	}
@@ -145,7 +149,7 @@ func (ch *chatchan) At(i int16) *ToSend {
 // GC during reuse. The queue will not be resized smaller as long as items are
 // only added. Only when items are removed is the queue subject to getting
 // resized smaller.
-func (ch *chatchan) Clear() {
+func (ch *Dechan) Clear() {
 	// bitwise modulus
 	modBits := int16(len(ch.buf) - 1)
 	for h := ch.head; h != ch.tail; h = (h + 1) & modBits {
@@ -156,10 +160,10 @@ func (ch *chatchan) Clear() {
 	ch.count = 0
 }
 
-// Rotate rotates the chatchan n steps front-to-back. If n is negative, rotates
-// back-to-front. Having chatchan provide Rotate() avoids resizing that could
+// Rotate rotates the Dechan n steps front-to-back. If n is negative, rotates
+// back-to-front. Having Dechan provide Rotate() avoids resizing that could
 // happen if implementing rotation using only Pop and Push methods.
-func (ch *chatchan) Rotate(n int16) {
+func (ch *Dechan) Rotate(n int16) {
 	if ch.count <= 1 {
 		return
 	}
@@ -202,50 +206,50 @@ func (ch *chatchan) Rotate(n int16) {
 	}
 }
 
-// SetcChChMinCapacity sets a minimum capacity of 2^cChChMinCapacityExp.
+// SetMinCapacity sets a minimum capacity of 2^minCap.
 // If the value of the minimum capacity is less than or equal
 // to the minimum allowed, then capacity is set to the minimum allowed.
 // This may be called at anytime to set a new minimum capacity.
 //
 // Setting a larger minimum capacity may be used to prevent resizing
 // when the number of stored items changes frequently across a wide range.
-func (ch *chatchan) SetcChChMinCapacity(cChChMinCapacityExp uint16) {
-	if 1<<cChChMinCapacityExp > cChChMinCapacity {
-		ch.minCap = 1 << cChChMinCapacityExp
+func (ch *Dechan) SetMinCapacity(minCap uint16) {
+	if 1<<minCap > minCapacity {
+		ch.minCap = 1 << minCap
 	} else {
-		ch.minCap = cChChMinCapacity
+		ch.minCap = minCapacity
 	}
 }
 
 // prev returns the previous buffer position wrapping around buffer.
-func (ch *chatchan) prev(i int16) int16 {
+func (ch *Dechan) prev(i int16) int16 {
 	return (i - 1) & int16(len(ch.buf)-1) // bitwise modulus
 }
 
 // next returns the next buffer position wrapping around buffer.
-func (ch *chatchan) next(i int16) int16 {
+func (ch *Dechan) next(i int16) int16 {
 	return (i + 1) & int16(len(ch.buf)-1) // bitwise modulus
 }
 
 // growIfFull resizes up if the buffer is full.
-func (ch *chatchan) growIfFull() {
+func (ch *Dechan) growIfFull() {
 	if ch.count == int16(len(ch.buf)) {
 		ch.resize()
 	}
 }
 
 // shrinkIfExcess resize down if the buffer 1/4 full.
-func (ch *chatchan) shrinkIfExcess() {
+func (ch *Dechan) shrinkIfExcess() {
 	if l := int16(len(ch.buf)); l > ch.minCap && (ch.count<<2) == l {
 		ch.resize()
 	}
 }
 
-// resize resizes the chatchan to fit exactly twice its current contents.
+// resize resizes the Dechan to fit exactly twice its current contents.
 // This is used to grow the queue when it is full,
 // and also to shrink it when it is only a quarter full.
-func (ch *chatchan) resize() {
-	newBuf := make([]*ToSend, ch.count<<1)
+func (ch *Dechan) resize() {
+	newBuf := make([]unsafe.Pointer, ch.count<<1)
 	if ch.tail > ch.head {
 		copy(newBuf, ch.buf[ch.head:ch.tail])
 	} else {
@@ -258,23 +262,23 @@ func (ch *chatchan) resize() {
 	ch.buf = newBuf
 }
 
-// makeChatchan creates a new chatchan object with passed capacity value.
-// If passed capacity < cChChMinCapacity (16 by default), it will be overwritten
+// New creates a new Dechan object with passed capacity value.
+// If passed capacity < minCapacity (16 by default), it will be overwritten
 // by that value.
-func makeChatchan(cap int16) *chatchan {
-	ch := new(chatchan)
+func New(cap int16) *Dechan {
+	ch := new(Dechan)
 
 	// don't need this check because of:
 	// only Sender.consts.chchCap used as cap arg for this constructor
-	// => Sender.consts.chchCap default value is cChChMinCapacity (sender.go:384),
+	// => Sender.consts.chchCap default value is minCapacity (sender.go:384),
 	// => Sender.consts.chchCap changes only from Params.SetEXREOF and that param
 	// has this check (params.go:93:95).
-	// if cap < cChChMinCapacity {
-	// 	cap = cChChMinCapacity
+	// if cap < minCapacity {
+	// 	cap = minCapacity
 	// }
 
 	ch.minCap = cap
-	ch.buf = make([]*ToSend, ch.minCap)
+	ch.buf = make([]unsafe.Pointer, ch.minCap)
 
 	return ch
 }
