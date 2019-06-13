@@ -5,14 +5,9 @@
 
 package lirester
 
-import (
-	"github.com/qioalice/devola/core/chat"
-)
-
 // lirchat represents a Lirester chat that contains three important things:
 //
 // - How much messages has been sent at this moment to that chat?
-// - What the type of that chat?
 // - When this chat has been updated last time?
 type lirchat struct {
 
@@ -24,6 +19,5 @@ type lirchat struct {
 	// ALL TIMESTAMPS IN NANO SECONDS!
 
 	n           uint8
-	typ         chat.Type
 	lastUpdated int64
 }

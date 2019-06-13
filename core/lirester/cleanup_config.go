@@ -10,15 +10,15 @@ import (
 )
 
 // cleanupConfig represents an object that contains two important things:
-// - Chat id of chat, cleanup operation will perform over
+// - Chat's ID, cleanup operation will perform over what
 // - Unixnano timestamp when cleanup operation will perform
 type cleanupConfig struct {
 	chatID chat.ID
 	when   int64
 }
 
-// makeCleanupConfig creates a new cleanupConfig object with
-// passed chat id and timestamp when created cleanup rule should be applied.
+// makeCleanupConfig creates a new cleanup rule with passed chat's ID
+// and timestamp when this cleanup rule should be applied.
 func makeCleanupConfig(chatID chat.ID, when int64) cleanupConfig {
 	return cleanupConfig{
 		chatID: chatID,

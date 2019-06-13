@@ -104,8 +104,8 @@ type Lirester struct {
 		// before that chat will be deleted from Lirester.
 		chatLifeTime int64
 
-		Ns [chat.MaxTypeValue]uint8 // N'(i) for chat types.
-		Ts [chat.MaxTypeValue]int64 // T'(i) for chat types.
+		Ns [chat.MaxTypeValue + 1]uint8 // N'(i) for chat types.
+		Ts [chat.MaxTypeValue + 1]int64 // T'(i) for chat types.
 	}
 
 	// Main Lirester ticker.
@@ -127,9 +127,10 @@ type Lirester struct {
 }
 
 // Try returns true if it is possible to send at least one message to the chat
-// with passed its id and type.
+// with passed its id and type (as combined idt value).
+//
 // Always returns true if Lirester is disabled.
-func (l *Lirester) Try(chatID chat.ID, chatType chat.Type) (isAllow bool) {
+func (l *Lirester) Try(idt chat.IDT) (isAllow bool) {
 
 	// Lirester can be nil (disabled), but code may still have lirester calls.
 	if l == nil {
@@ -142,16 +143,19 @@ func (l *Lirester) Try(chatID chat.ID, chatType chat.Type) (isAllow bool) {
 		return false
 	}
 
-	if ch, ok := l.core[chatID]; ok {
-		return ch.n < l.consts.Ns[chatType]
+	if ch, ok := l.core[idt.ID()]; ok {
+		return ch.n < l.consts.Ns[idt.Type()]
 	}
 
 	return true
 }
 
-// Approve lets Lirester to know that ONE message to the chat with the passed
-// chat id is successfully sent.
-func (l *Lirester) Approve(now int64, chatID chat.ID, chatType chat.Type) {
+// Approve lets Lirester to know that ONE message is successfully sent to the chat
+// with passed its id and type (as combined IDT value).
+func (l *Lirester) Approve(now int64, idt chat.IDT) {
+
+	// Note.
+	// 2nd arg is chat.IDT (not a just chat.ID), because addCleanup requires chat.Type.
 
 	// WARNING!
 	// ALL TIMESTAMPS IN NANO SECONDS!
@@ -163,14 +167,15 @@ func (l *Lirester) Approve(now int64, chatID chat.ID, chatType chat.Type) {
 		return
 	}
 
-	// if core don't have chat with that chat ID, ch is an object with zero values.
-	ch := l.core[chatID]
+	// if core don't have chat with that chat IDT, ch is an object with zero values.
+	ch := l.core[idt.ID()]
 
 	// update values and save an updated object back to the core
-	ch.n, ch.typ, ch.lastUpdated = ch.n+1, chatType, now
-	l.core[chatID] = ch
+	ch.n++
+	ch.lastUpdated = now
+	l.core[idt.ID()] = ch
 
-	l.addCleanup(now, chatID, chatType)
+	l.addCleanup(now, idt)
 }
 
 // Cleanup parses all accumulated cleanup rules and tries to apply it.
@@ -198,16 +203,18 @@ func (l *Lirester) Cleanup(now int64) {
 	}
 }
 
-// LastUpdated returns the unixnano timestamp when the chat with the passed chat id
-// was updated last time or -1 if that info can't be obtained.
-func (l *Lirester) LastUpdated(chatID chat.ID) int64 {
+// LastUpdated returns the unixnano timestamp when the chat
+// with passed its id was updated last time.
+//
+// It returns -1 if that info can't be obtained.
+func (l *Lirester) LastUpdated(id chat.ID) int64 {
 
 	// Lirester can be nil (disabled), but code may still have lirester calls.
 	if l == nil || l.restartRequestedWith != nil {
 		return -1
 	}
 
-	if ch, ok := l.core[chatID]; ok {
+	if ch, ok := l.core[id]; ok {
 		return ch.lastUpdated
 	}
 	return -1
@@ -231,15 +238,17 @@ func (l *Lirester) RequestRestartWith(params []interface{}) {
 	l.restartRequestedWith = params
 }
 
-// addCleanup creates a new cleanup rule for a chat with specified chat id
-// that will be applied after now + delay (D).
-// D depends from chat type (with user or group chat) and internal constants.
-func (l *Lirester) addCleanup(now int64, chatID chat.ID, chatType chat.Type) {
+// addCleanup creates a new cleanup rule that will be applied after now + delay (D)
+// to a chat which id and type are passed (as combined idt value).
+//
+// D depends from chat's type and its delay value that's computed at the
+// Lirester's initialization.
+func (l *Lirester) addCleanup(now int64, idt chat.IDT) {
 
 	// WARNING!
 	// ALL TIMESTAMPS IN NANO SECONDS!
 
-	l.chCleanup <- makeCleanupConfig(chatID, l.consts.Ts[chatType]+now)
+	l.chCleanup <- makeCleanupConfig(idt.ID(), l.consts.Ts[idt.Type()]+now)
 }
 
 // cleanupDecCounters performs first cleanup type operation:
