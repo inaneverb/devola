@@ -12,7 +12,7 @@ type CIM struct {
 }
 
 //
-type FCIMGetChatInfo func(id ID) (*Chat, error)
+type FCIMGetChatInfo func(id IDT) (*Chat, error)
 
 //
 type FCIMSaveChatInfo func(ci *Chat) error
