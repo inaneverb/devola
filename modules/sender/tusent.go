@@ -3,7 +3,7 @@
 // Contacts: <qioalice@gmail.com>.
 // License: https://opensource.org/licenses/MIT
 
-package tusent
+package sender
 
 import (
 	"unsafe"
@@ -16,7 +16,7 @@ import (
 	"github.com/qioalice/devola/core/sys/flag"
 	"github.com/qioalice/devola/core/sys/fn"
 
-	"github.com/qioalice/devola/modules/brdige"
+	"github.com/qioalice/devola/modules/bridge"
 )
 
 // Tusent (to send) is a complex type of sending "reaction" (a set of actions)
@@ -58,7 +58,7 @@ type Tusent struct {
 	// Logging and finishing transaction uses core/bridge.Bridge module to call
 	// backend depended functions.
 
-	bridge *brdige.Bridge
+	bridge *bridge.Bridge
 	flags  flag.F8
 
 	// ChatIDT is combined backend chat's ID and chat's type.
@@ -154,7 +154,7 @@ func (ts *Tusent) MakeError(err error) *Tusent {
 // NeedToFinish returns true if current Tusent object should to close (finish)
 // chat's or session's transaction of self.
 func (ts *Tusent) NeedToFinish() bool {
-	return ts.flags.AnyFlag(CFinishChatTransaction | CFinishSessionTransaction)
+	return ts.flags.TestAny(CFinishChatTransaction | CFinishSessionTransaction)
 }
 
 // Call calls saved callbacks passing context object and object of sent msg
@@ -163,36 +163,16 @@ func (ts *Tusent) NeedToFinish() bool {
 // Optionally protect calls by panic guard and tries to finish transactions
 // (depends on what flags were passed to the constructor).
 func (ts *Tusent) Call() {
+
 	for _, cb := range ts.OnSuccess {
 		ts.invoke(cb, true)
 	}
+
 	for _, cb := range ts.OnError {
 		ts.invoke(cb, false)
 	}
+
 	ts.finishTransactions()
-}
-
-// Protect tries to recover panic and if it is so writes the log message
-// using log about it.
-//
-// WARNING!
-// This method should be called with "defer" keyword, otherwise there is no-op.
-func (ts *Tusent) recoverPanicOf(cb fn.Named) {
-
-	err := recover()
-	if err == nil {
-		return
-	}
-
-	ts.bridge.ML.Warn(
-		"There was a restored panic in the user function.",
-		logger.KindAsField(logger.Core, logger.RecoveredPanic),
-
-		zap.String("ctx", ts.bridge.CtxView(ts.Ctx, true, true)),
-		zap.String("fn_name", cb.Name),
-		zap.Uint("fn_addr", uint(uintptr(cb.Ptr))),
-		zap.Any("recovered_panic", err),
-	)
 }
 
 // invoke safety (if panic guard is enabled) calls cb as func with 2 args.
@@ -202,15 +182,21 @@ func (ts *Tusent) recoverPanicOf(cb fn.Named) {
 // isSuccess == false: 2nd arg is an error of sending message.
 func (ts *Tusent) invoke(cb fn.Named, isSuccess bool) {
 
-	if ts.flags.TestFlag(CEnablePanicGuard) {
-		defer ts.recoverPanicOf(cb)
-	}
-
 	if isSuccess {
+
+		if ts.flags.TestAll(CEnablePanicGuard) {
+			defer ts.bridge.RecoverPanicOf(ts.Ctx, bridge.KindOnSuccessFinisher, cb.Ptr, cb.Name, nil)
+		}
+
 		cbTypedPtr := (*func(_, _ unsafe.Pointer))(cb.Ptr)
 		(*cbTypedPtr)(ts.Ctx, ts.SentObj) // call
 
 	} else {
+
+		if ts.flags.TestAll(CEnablePanicGuard) {
+			defer ts.bridge.RecoverPanicOf(ts.Ctx, bridge.KindOnErrorFinisher, cb.Ptr, cb.Name, ts.SendingErr)
+		}
+
 		cbTypedPtr := (*func(unsafe.Pointer, error))(cb.Ptr)
 		(*cbTypedPtr)(ts.Ctx, ts.SendingErr) // call
 	}
@@ -225,7 +211,7 @@ func (ts *Tusent) finishTransactions() {
 
 	var err error
 
-	if !ts.flags.TestFlag(CFinishSessionTransaction) {
+	if !ts.flags.TestAll(CFinishSessionTransaction) {
 		goto finishChatTr
 	}
 
@@ -246,7 +232,7 @@ func (ts *Tusent) finishTransactions() {
 
 finishChatTr:
 
-	if !ts.flags.TestFlag(CFinishChatTransaction) {
+	if !ts.flags.TestAll(CFinishChatTransaction) {
 		return
 	}
 
@@ -266,8 +252,8 @@ finishChatTr:
 
 // New creates a new Tusent object using passed arguments.
 // You should then specify type of Tusent using any of MakeSuccess, MakeError method.
-func New(
-	bridge *brdige.Bridge,
+func MakeTusent(
+	bridge *bridge.Bridge,
 	flags flag.F8,
 	chatID chat.IDT,
 	onSuccess, onError []fn.Named,
