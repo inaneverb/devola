@@ -3,12 +3,23 @@
 // Contacts: <qioalice@gmail.com>.
 // License: https://opensource.org/licenses/MIT
 
-package chat
+package bridge
 
 //
-type Type uint8
+type Kind uint8
 
 //
 const (
-	MaxTypeValue Type = 16
+	KindHandler Kind = 1 + iota
+
+	KindMiddleware
+
+	KindOnSuccessFinisher
+
+	KindOnErrorFinisher
 )
+
+//
+func (k Kind) String() string {
+
+}
